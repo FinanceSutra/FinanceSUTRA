@@ -342,23 +342,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   app.post('/api/strategies', async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
+    // if (!req.session.userId) {
+    //   return res.status(401).json({ message: 'Not authenticated' });
+    // }
     
     try {
       const strategyData = insertStrategySchema.parse({
         ...req.body,
         userId: req.session.userId
       });
-      
+      console.log(strategyData);
       const strategy = await storage.createStrategy(strategyData);
       res.status(201).json(strategy);
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: error.errors[0].message });
       } else {
-        res.status(500).json({ message: 'Server error' });
+        // res.status(500).json({ message: 'Server error' });
+        res.send(error);
       }
     }
   });

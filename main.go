@@ -10,7 +10,7 @@ import (
 
 
 func connectToPostgreSQL() (*gorm.DB, error) {
-    dsn := "user=postgres password=Daksh@2706 dbname=FinanceSutra host=localhost port=5432 sslmode=disable"
+    dsn := "user=postgres password='' dbname=FinanceSutra host=localhost port=5432 sslmode=disable"
     db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
     if err != nil {
         return nil, err
@@ -21,38 +21,38 @@ func connectToPostgreSQL() (*gorm.DB, error) {
 
 
 
-// func createUser(db *gorm.DB, user *shared.User) error {
-//     result := db.Create(user)
-//     if result.Error != nil {
-//         return result.Error
-//     }
-//     return nil
-// }
+func createUser(db *gorm.DB, user *shared.User) error {
+    result := db.Create(user)
+    if result.Error != nil {
+        return result.Error
+    }
+    return nil
+}
 
-// func getUserByID(db *gorm.DB, userID uint) (*shared.User, error) {
-//     var user shared.User
-//     result := db.First(&user, userID)
-//     if result.Error != nil {
-//         return nil, result.Error
-//     }
-//     return &user, nil
-// }
+func getUserByID(db *gorm.DB, userID uint) (*shared.User, error) {
+    var user shared.User
+    result := db.First(&user, userID)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    return &user, nil
+}
 
-// func updateUser(db *gorm.DB, user *shared.User) error {
-//     result := db.Save(user)
-//     if result.Error != nil {
-//         return result.Error
-//     }
-//     return nil
-// }
+func updateUser(db *gorm.DB, user *shared.User) error {
+    result := db.Save(user)
+    if result.Error != nil {
+        return result.Error
+    }
+    return nil
+}
 
-// func deleteUser(db *gorm.DB, user *shared.User) error {
-//     result := db.Delete(user)
-//     if result.Error != nil {
-//         return result.Error
-//     }
-//     return nil
-// }
+func deleteUser(db *gorm.DB, user *shared.User) error {
+    result := db.Delete(user)
+    if result.Error != nil {
+        return result.Error
+    }
+    return nil
+}
 
 // func createStrategy(db *gorm.DB, user *shared.Strategy) error {
 //     result := db.Create(user)
@@ -469,12 +469,12 @@ func main() {
     }
 
     // Create a user
-    // newUser := &shared.User{Username: "Daksh", Email: "daksh@gmail.com", Password: "ok", FullName: "Daksh Jain"}
-    // err = createUser(db, newUser)
-    // if err != nil {
-    //     log.Fatal(err)
-    // }
-    // log.Println("Created User:", newUser)
+    newUser := &shared.User{Username: "Daksh", Email: "daksh@gmail.com", Password: "ok", FullName: "Daksh Jain"}
+    err = createUser(db, newUser)
+    if err != nil {
+        log.Fatal(err)
+    }
+    log.Println("Created User:", newUser)
 
     // // Query user by ID
     // userID := newUser.ID
