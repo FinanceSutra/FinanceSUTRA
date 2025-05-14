@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Lightbulb,
   ShieldAlert,
+  Workflow,
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -162,6 +163,9 @@ const Sidebar: React.FC = () => {
         </NavItem>
         <NavItem href="/risk-management" icon={<ShieldAlert />} isActive={location === '/risk-management'}>
           Risk Management
+        </NavItem>
+        <NavItem href="/trading-workflows" icon={<Workflow />} isActive={location === '/trading-workflows'}>
+          Workflow Automation
         </NavItem>
         <NavItem href="/reports" icon={<DollarSign />} isActive={location === '/reports'}>
           P&L Reports

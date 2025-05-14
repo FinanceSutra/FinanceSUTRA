@@ -18,11 +18,16 @@ import BrokerSetup from "@/pages/broker-setup";
 import Billing from "@/pages/billing";
 import Settings from "@/pages/settings";
 import Checkout from "@/pages/checkout";
+import TradingWorkflows from "@/pages/trading-workflows";
+import CreateWorkflow from "@/pages/create-workflow";
+import WorkflowDetails from "@/pages/workflow-details";
 // import Subscribe from "@/pages/subscribe";
 import TestPage from "@/pages/test";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { useState } from "react";
+import AuthPage from"@/pages/auth-page";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
   return (
@@ -43,8 +48,16 @@ function Router() {
       <Route path="/settings" component={Settings} />
       {/* <Route path="/checkout" component={Checkout} /> */}
       {/* <Route path="/subscribe" component={Subscribe} /> */}
+      <Route path="/trading-workflows" component={TradingWorkflows} />
+      <Route path="/create-workflow" component={CreateWorkflow} />
+      <Route path="/edit-workflow/:id" component={CreateWorkflow} />
+      <Route path="/workflow/:id" component={WorkflowDetails} />
       <Route path="/test" component={TestPage} />
       <Route component={NotFound} />
+      <AuthProvider>
+      <Route path="/auth" component={AuthPage}/>
+      <Route path="/risk-management" component={RiskManagement} />
+      </AuthProvider>
     </Switch>
   );
 }
