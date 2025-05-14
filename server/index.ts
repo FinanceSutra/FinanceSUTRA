@@ -10,19 +10,19 @@ app.use(express.urlencoded({ extended: false }));
 
 // Session setup with memory store
 const SessionStore = MemoryStore(session);
-// app.use(session({
-//   secret: process.env.SESSION_SECRET || 'trading-platform-secret',
-//   cookie: {
-//     maxAge: 86400000, // 24 hours
-//     secure: process.env.NODE_ENV === 'production',
-//     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-//   },
-//   store: new SessionStore({
-//     checkPeriod: 86400000 // prune expired entries every 24h
-//   }),
-//   resave: false,
-//   saveUninitialized: false
-// }));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'trading-platform-secret',
+  cookie: {
+    maxAge: 86400000, // 24 hours
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  },
+  store: new SessionStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
+  resave: false,
+  saveUninitialized: false
+}));
 
 // Add a basic health check endpoint
 app.get('/healthz', (req, res) => {

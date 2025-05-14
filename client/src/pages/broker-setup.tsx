@@ -157,6 +157,105 @@ const BrokerSetupPage: React.FC = () => {
   // List of available brokers
   const availableBrokers: BrokerInfo[] = [
     {
+      id: 'paper_trading',
+      name: 'Paper Trading',
+      logo: <span className="font-bold text-blue-600">Paper Trading</span>,
+      description: 'Simulate trading with virtual money in a risk-free environment. Perfect for testing strategies without real capital at risk.',
+      url: '#',
+      fields: [
+        {
+          name: 'accountName',
+          label: 'Account Name',
+          type: 'text',
+          required: true,
+          description: 'Give your paper trading account a name (e.g., "Test Account")'
+        },
+        {
+          name: 'initialCapital',
+          label: 'Initial Capital',
+          type: 'text',
+          required: true,
+          description: 'Starting capital for your paper trading account (in INR)'
+        }
+      ]
+    },
+    // Indian Brokers
+    {
+      id: 'zerodha',
+      name: 'Zerodha',
+      logo: <span className="font-bold text-blue-600">Zerodha</span>,
+      description: 'India\'s largest stock broker offering the lowest, most transparent brokerage rates in the industry.',
+      url: 'https://zerodha.com',
+      fields: [
+        {
+          name: 'userId',
+          label: 'User ID',
+          type: 'text',
+          required: true,
+          description: 'Your Zerodha user ID/client ID'
+        },
+        {
+          name: 'apiKey',
+          label: 'API Key',
+          type: 'text',
+          required: true,
+          description: 'Your Zerodha Kite Connect API key'
+        },
+        {
+          name: 'apiSecret',
+          label: 'API Secret',
+          type: 'password',
+          required: true,
+          description: 'Your Zerodha API secret'
+        },
+        {
+          name: 'apiToken',
+          label: 'Access Token',
+          type: 'password',
+          required: true,
+          description: 'Your Zerodha access token (generated from Kite Connect)'
+        }
+      ]
+    },
+    {
+      id: 'upstox',
+      name: 'Upstox',
+      logo: <span className="font-bold text-red-600">Upstox</span>,
+      description: 'Online trading and investment platform for stocks, derivatives, currencies, commodities, and mutual funds.',
+      url: 'https://upstox.com',
+      fields: [
+        {
+          name: 'apiKey',
+          label: 'API Key',
+          type: 'text',
+          required: true,
+          description: 'Your Upstox API key'
+        },
+        {
+          name: 'apiSecret',
+          label: 'API Secret',
+          type: 'password',
+          required: true,
+          description: 'Your Upstox API secret'
+        },
+        {
+          name: 'accessToken',
+          label: 'Access Token',
+          type: 'password',
+          required: true,
+          description: 'Your Upstox access token'
+        },
+        {
+          name: 'accountId',
+          label: 'Client ID',
+          type: 'text',
+          required: true,
+          description: 'Your Upstox client ID'
+        }
+      ]
+    },
+    // International Brokers
+    {
       id: 'interactive_brokers',
       name: 'Interactive Brokers',
       logo: <span className="font-bold text-neutral-700">Interactive Brokers</span>,
@@ -275,311 +374,7 @@ const BrokerSetupPage: React.FC = () => {
           description: 'Select practice or live environment'
         }
       ]
-    },
-    // Indian Brokers
-    {
-      id: 'zerodha',
-      name: 'Zerodha',
-      logo: <span className="font-bold text-neutral-700">Zerodha</span>,
-      description: 'Connect to Zerodha, one of India\'s largest discount brokers.',
-      url: 'https://zerodha.com',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'API Key',
-          type: 'text',
-          required: true,
-          description: 'Your Zerodha API key'
-        },
-        {
-          name: 'apiSecret',
-          label: 'API Secret',
-          type: 'password',
-          required: true,
-          description: 'Your Zerodha API secret'
-        },
-        {
-          name: 'userId',
-          label: 'User ID',
-          type: 'text',
-          required: true,
-          description: 'Your Zerodha user ID'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select virtual or live environment'
-        }
-      ]
-    },
-    {
-      id: 'dhan',
-      name: 'Dhan',
-      logo: <span className="font-bold text-neutral-700">Dhan</span>,
-      description: 'Connect to Dhan for trading on NSE, BSE, MCX and more.',
-      url: 'https://dhan.co',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'Client ID',
-          type: 'text',
-          required: true,
-          description: 'Your Dhan client ID'
-        },
-        {
-          name: 'apiSecret',
-          label: 'API Secret',
-          type: 'password',
-          required: true,
-          description: 'Your Dhan API secret'
-        },
-        {
-          name: 'accessToken',
-          label: 'Access Token',
-          type: 'password',
-          required: true,
-          description: 'Your Dhan access token'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select paper or live environment'
-        }
-      ]
-    },
-    {
-      id: 'groww',
-      name: 'Groww',
-      logo: <span className="font-bold text-neutral-700">Groww</span>,
-      description: 'Connect to Groww for stocks, mutual funds, and IPO investments.',
-      url: 'https://groww.in',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'API Key',
-          type: 'text',
-          required: true,
-          description: 'Your Groww API key'
-        },
-        {
-          name: 'apiSecret',
-          label: 'API Secret',
-          type: 'password',
-          required: true,
-          description: 'Your Groww API secret'
-        },
-        {
-          name: 'clientId',
-          label: 'Client ID',
-          type: 'text',
-          required: true,
-          description: 'Your Groww client ID'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select demo or live environment'
-        }
-      ]
-    },
-    {
-      id: 'finvasia',
-      name: 'Finvasia',
-      logo: <span className="font-bold text-neutral-700">Finvasia</span>,
-      description: 'Connect to Finvasia for commission-free trading on NSE and BSE.',
-      url: 'https://finvasia.com',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'API Key',
-          type: 'text',
-          required: true,
-          description: 'Your Finvasia API key'
-        },
-        {
-          name: 'userId',
-          label: 'User ID',
-          type: 'text',
-          required: true,
-          description: 'Your Finvasia user ID'
-        },
-        {
-          name: 'password',
-          label: 'Password',
-          type: 'password',
-          required: true,
-          description: 'Your Finvasia account password'
-        },
-        {
-          name: 'vendorCode',
-          label: 'Vendor Code',
-          type: 'text',
-          required: true,
-          description: 'Your Finvasia vendor code'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select practice or live environment'
-        }
-      ]
-    },
-    {
-      id: 'flattrade',
-      name: 'Flattrade',
-      logo: <span className="font-bold text-neutral-700">Flattrade</span>,
-      description: 'Connect to Flattrade for flat-fee broking services in India.',
-      url: 'https://flattrade.in',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'API Key',
-          type: 'text',
-          required: true,
-          description: 'Your Flattrade API key'
-        },
-        {
-          name: 'apiSecret',
-          label: 'API Secret',
-          type: 'password',
-          required: true,
-          description: 'Your Flattrade API secret'
-        },
-        {
-          name: 'clientCode',
-          label: 'Client Code',
-          type: 'text',
-          required: true,
-          description: 'Your Flattrade client code'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select paper or live environment'
-        }
-      ]
-    },
-    {
-      id: 'angelone',
-      name: 'Angel One',
-      logo: <span className="font-bold text-neutral-700">Angel One</span>,
-      description: 'Connect to Angel One (formerly Angel Broking) for Indian markets.',
-      url: 'https://angelone.in',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'API Key',
-          type: 'text',
-          required: true,
-          description: 'Your Angel One API key'
-        },
-        {
-          name: 'clientCode',
-          label: 'Client Code',
-          type: 'text',
-          required: true,
-          description: 'Your Angel One client code'
-        },
-        {
-          name: 'password',
-          label: 'Password',
-          type: 'password',
-          required: true,
-          description: 'Your Angel One account password'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select practice or live environment'
-        }
-      ]
-    },
-    {
-      id: 'upstox',
-      name: 'Upstox',
-      logo: <span className="font-bold text-neutral-700">Upstox</span>,
-      description: 'Connect to Upstox for trading equities, commodities, and currencies.',
-      url: 'https://upstox.com',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'API Key',
-          type: 'text',
-          required: true,
-          description: 'Your Upstox API key'
-        },
-        {
-          name: 'apiSecret',
-          label: 'API Secret',
-          type: 'password',
-          required: true,
-          description: 'Your Upstox API secret'
-        },
-        {
-          name: 'redirectUrl',
-          label: 'Redirect URL',
-          type: 'text',
-          required: true,
-          description: 'Your registered redirect URL for Upstox API'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select paper or live environment'
-        }
-      ]
-    },
-    {
-      id: 'icici_direct',
-      name: 'ICICI Direct',
-      logo: <span className="font-bold text-neutral-700">ICICI Direct</span>,
-      description: 'Connect to ICICI Direct for comprehensive trading solutions.',
-      url: 'https://www.icicidirect.com',
-      fields: [
-        {
-          name: 'apiKey',
-          label: 'API Key',
-          type: 'text',
-          required: true,
-          description: 'Your ICICI Direct API key'
-        },
-        {
-          name: 'apiSecret',
-          label: 'API Secret',
-          type: 'password',
-          required: true,
-          description: 'Your ICICI Direct API secret'
-        },
-        {
-          name: 'userId',
-          label: 'User ID',
-          type: 'text',
-          required: true,
-          description: 'Your ICICI Direct user ID'
-        },
-        {
-          name: 'environment',
-          label: 'Environment',
-          type: 'select',
-          required: true,
-          description: 'Select practice or live environment'
-        }
-      ]
-    },
+    }
   ];
   
   // Find active connections
@@ -684,7 +479,7 @@ const BrokerSetupPage: React.FC = () => {
                 {isConnected && (
                   <div className="flex items-center mb-4">
                     {activeConnection.status === 'connected' && (
-                      <Badge variant="success" className="flex items-center">
+                      <Badge variant="outline" className="flex items-center bg-green-100 text-green-800">
                         <ShieldCheck className="h-3 w-3 mr-1" />
                         Connected
                       </Badge>
@@ -751,7 +546,8 @@ const BrokerSetupPage: React.FC = () => {
               ) : (
                 <Button
                   onClick={() => handleConnect(broker)}
-                  className="mt-4 w-full py-2 border border-primary text-primary font-medium rounded-md hover:bg-primary hover:text-white transition-colors"
+                  className="mt-4 w-full"
+                  variant="outline"
                 >
                   Connect
                 </Button>
@@ -784,165 +580,121 @@ const BrokerSetupPage: React.FC = () => {
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
-                <AccordionTrigger>Can I use paper trading accounts?</AccordionTrigger>
+                <AccordionTrigger>What is paper trading?</AccordionTrigger>
                 <AccordionContent>
-                  Yes, we support paper trading accounts for most brokers. When connecting, simply use your paper trading API credentials instead of your live account credentials.
+                  Paper trading allows you to simulate trades in a risk-free environment using virtual currency. It's perfect for testing strategies without risking real money.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-4">
-                <AccordionTrigger>How do I get API keys from my broker?</AccordionTrigger>
+                <AccordionTrigger>How do I generate API keys for my broker?</AccordionTrigger>
                 <AccordionContent>
-                  <p className="mb-2">Each broker has a different process for generating API keys:</p>
+                  <p>For Indian brokers:</p>
                   <ul className="list-disc pl-5 space-y-1">
                     <li>
-                      <span className="font-medium">Interactive Brokers:</span> Log in to Client Portal → Settings → API → Create API Key
+                      <span className="font-semibold">Zerodha:</span> 
+                      <a href="https://kite.zerodha.com/settings/api" target="_blank" rel="noopener noreferrer" className="text-primary ml-1 inline-flex items-center">
+                        Visit Kite Connect dashboard <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
                     </li>
                     <li>
-                      <span className="font-medium">TD Ameritrade:</span> Visit Developer Portal → Create App → Register & obtain Consumer Key
+                      <span className="font-semibold">Upstox:</span> 
+                      <a href="https://upstox.com/developer/login" target="_blank" rel="noopener noreferrer" className="text-primary ml-1 inline-flex items-center">
+                        Visit Upstox developer portal <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </li>
+                  </ul>
+                  <p className="mt-2">For international brokers:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>
+                      <span className="font-semibold">Interactive Brokers:</span> 
+                      <a href="https://www.interactivebrokers.com/en/software/am/am/manageaccount/capoptions.htm" target="_blank" rel="noopener noreferrer" className="text-primary ml-1 inline-flex items-center">
+                        Visit IBKR account management <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
                     </li>
                     <li>
-                      <span className="font-medium">Alpaca:</span> Log in to Dashboard → Paper/Live Trading → API Keys
-                    </li>
-                    <li>
-                      <span className="font-medium">OANDA:</span> Log in to your account → Manage API Access → Generate API Key
+                      <span className="font-semibold">Alpaca:</span> 
+                      <a href="https://app.alpaca.markets/paper/dashboard/overview" target="_blank" rel="noopener noreferrer" className="text-primary ml-1 inline-flex items-center">
+                        Visit Alpaca dashboard <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
                     </li>
                   </ul>
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="item-5">
-                <AccordionTrigger>What should I do if I suspect my API keys are compromised?</AccordionTrigger>
-                <AccordionContent>
-                  If you suspect your API keys have been compromised, immediately revoke them from your broker's platform and generate new ones. Then update your connection in this platform with the new keys.
-                </AccordionContent>
-              </AccordionItem>
             </Accordion>
           </CardContent>
-          <CardFooter className="border-t pt-4">
-            <div className="flex items-center justify-between w-full">
-              <div className="text-xs text-neutral-500">
-                Need help? Contact support for assistance with broker connections.
-              </div>
-              <Button variant="outline" size="sm" className="text-sm">
-                <Link className="h-4 w-4 mr-1" />
-                Documentation
-              </Button>
-            </div>
-          </CardFooter>
         </Card>
       </div>
       
-      {/* Connect Dialog */}
       <Dialog open={connectDialogOpen} onOpenChange={setConnectDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Connect to {selectedBroker?.name}</DialogTitle>
             <DialogDescription>
-              Enter your API credentials to establish a connection with {selectedBroker?.name}.
-              <a 
-                href={selectedBroker?.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center mt-1 text-primary hover:underline"
-              >
-                Visit {selectedBroker?.name} <ExternalLink className="h-3 w-3 ml-1" />
-              </a>
+              Enter your broker credentials to connect your account
             </DialogDescription>
           </DialogHeader>
-          
           <form onSubmit={handleSubmit}>
-            <div className="space-y-4 py-4">
+            <div className="grid gap-4 py-4">
               {selectedBroker?.fields.map(field => (
-                <div key={field.name} className="space-y-2">
-                  <Label htmlFor={field.name}>{field.label}</Label>
-                  
-                  {field.type === 'select' ? (
-                    <Select 
-                      name={field.name} 
-                      onValueChange={(value) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          [field.name]: value,
-                        }));
-                      }}
-                      value={formData[field.name] || ''}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an option" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.name === 'environment' && (
-                          <>
-                            <SelectItem value="live">Live Trading</SelectItem>
-                            <SelectItem value="paper">Paper Trading</SelectItem>
-                            <SelectItem value="demo">Demo Account</SelectItem>
-                            <SelectItem value="practice">Practice Account</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  ) : field.type === 'checkbox' ? (
-                    <div className="flex items-center space-x-2">
-                      <Switch 
+                <div key={field.name} className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor={field.name} className="text-right">
+                    {field.label}
+                  </Label>
+                  <div className="col-span-3">
+                    {field.type === 'select' ? (
+                      <Select onValueChange={(value) => setFormData({ ...formData, [field.name]: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.name === 'environment' && (
+                            <>
+                              <SelectItem value="paper">Paper Trading</SelectItem>
+                              <SelectItem value="live">Live Trading</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    ) : field.type === 'checkbox' ? (
+                      <div className="flex items-center">
+                        <Switch 
+                          id={field.name} 
+                          checked={!!formData[field.name]} 
+                          onCheckedChange={(checked) => setFormData({ ...formData, [field.name]: checked.toString() })}
+                        />
+                        <Label htmlFor={field.name} className="ml-2">{field.description}</Label>
+                      </div>
+                    ) : (
+                      <Input
                         id={field.name}
                         name={field.name}
-                        checked={formData[field.name] === 'true'}
-                        onCheckedChange={(checked) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            [field.name]: checked ? 'true' : 'false',
-                          }));
-                        }}
+                        type={field.type}
+                        value={formData[field.name] || ''}
+                        onChange={handleInputChange}
+                        required={field.required}
+                        placeholder={field.description}
                       />
-                      <Label htmlFor={field.name} className="cursor-pointer">
-                        {formData[field.name] === 'true' ? 'Enabled' : 'Disabled'}
-                      </Label>
-                    </div>
-                  ) : (
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type={field.type}
-                      required={field.required}
-                      value={formData[field.name] || ''}
-                      onChange={handleInputChange}
-                    />
-                  )}
-                  
-                  {field.description && (
-                    <p className="text-xs text-neutral-500">{field.description}</p>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))}
               
-              <Alert variant="warning">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Security Notice</AlertTitle>
-                <AlertDescription>
-                  For maximum security, use API keys with trade-only permissions. Never share your API keys or secrets with anyone.
-                </AlertDescription>
-              </Alert>
+              <div className="col-span-4">
+                <Alert variant="warning" className="bg-amber-50">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Security Notice</AlertTitle>
+                  <AlertDescription>
+                    Your API credentials are encrypted and securely stored. We recommend using read-only access whenever possible.
+                  </AlertDescription>
+                </Alert>
+              </div>
             </div>
-            
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setConnectDialogOpen(false)}
-              >
+              <Button type="button" variant="secondary" onClick={() => setConnectDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit"
-                disabled={createConnectionMutation.isPending}
-              >
-                {createConnectionMutation.isPending ? (
-                  <>
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                    Connecting...
-                  </>
-                ) : (
-                  'Connect'
-                )}
+              <Button type="submit" disabled={createConnectionMutation.isPending}>
+                {createConnectionMutation.isPending ? 'Connecting...' : 'Connect'}
               </Button>
             </DialogFooter>
           </form>
