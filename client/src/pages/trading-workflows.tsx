@@ -93,29 +93,16 @@ export default function TradingWorkflows() {
   const [activeTab, setActiveTab] = useState("steps");
 
   // Fetch all workflows
-  const { data: workflows = [], } = useQuery<TradingWorkflow[]>({
+  const { data: workflows } = useQuery({
     queryKey: ['/api/workflows'],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/workflows");
-      return response.json();
-    },
     retry: 1
   });
-  
 
   // Fetch workflow steps
-  const { data: workflowSteps = [], isLoading: isLoadingSteps } = useQuery<WorkflowStep[]>({
+  const { data: workflowSteps = [], isLoading: isLoadingSteps } = useQuery({
     queryKey: ['/api/workflows', selectedWorkflow?.id, 'steps'],
-    queryFn: async () => {
-      if (selectedWorkflow?.id) {
-        const response = await apiRequest("GET", `/api/workflows/${selectedWorkflow.id}/steps`);
-        return response.json();
-      }
-      return [];
-    },
     enabled: !!selectedWorkflow,
   });
-  
 
   // Execute workflow mutation
   const executeWorkflowMutation = useMutation({

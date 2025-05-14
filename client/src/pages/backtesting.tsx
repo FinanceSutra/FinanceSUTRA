@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ArrowUpDown,
   DollarSign,
+  IndianRupee,
   BarChart,
   LineChart,
   PieChart,
@@ -56,6 +57,7 @@ import Header from '@/components/layout/Header';
 import PerformanceChart from '@/components/charts/PerformanceChart';
 import CandlestickChart from '@/components/charts/CandlestickChart';
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import { formatCurrency } from '@/lib/formatters';
 import type { Strategy, Backtest } from '@shared/schema';
 
 const BacktestingPage: React.FC = () => {
@@ -73,6 +75,20 @@ const BacktestingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('setup');
   const [backtest, setBacktest] = useState<Backtest | null>(null);
   const [selectedBacktestId, setSelectedBacktestId] = useState<number | null>(null);
+  
+  // Advanced parameters
+  const [showAdvancedParams, setShowAdvancedParams] = useState(false);
+  const [commissionPercent, setCommissionPercent] = useState(0.1);
+  const [slippagePercent, setSlippagePercent] = useState(0.05);
+  const [positionSizing, setPositionSizing] = useState(1.0);
+  const [stopLossPercent, setStopLossPercent] = useState(0);
+  const [takeProfitPercent, setTakeProfitPercent] = useState(0);
+  const [riskRewardRatio, setRiskRewardRatio] = useState(0);
+  const [maxOpenPositions, setMaxOpenPositions] = useState(1);
+  const [timeInForceExitDays, setTimeInForceExitDays] = useState(0);
+  const [marketConditions, setMarketConditions] = useState('all');
+  const [dataFrequency, setDataFrequency] = useState('1d');
+  const [optimizationTarget, setOptimizationTarget] = useState('sharpe');
   
   // Fetch strategies
   const { data: strategies, isLoading: loadingStrategies } = useQuery({
@@ -106,18 +122,34 @@ const BacktestingPage: React.FC = () => {
         throw new Error('No strategy selected');
       }
       
-      const response = await apiRequest('POST', `/api/strategies/${selectedStrategyId}/backtest`, {
+      const params = {
         startDate,
         endDate,
         initialCapital,
-      });
+        // Only include advanced parameters if the advanced section is open
+        ...(showAdvancedParams && {
+          commissionPercent,
+          slippagePercent,
+          positionSizing,
+          stopLossPercent,
+          takeProfitPercent,
+          riskRewardRatio,
+          maxOpenPositions,
+          timeInForceExitDays,
+          marketConditions,
+          dataFrequency,
+          optimizationTarget
+        })
+      };
+      
+      const response = await apiRequest('POST', `/api/strategies/${selectedStrategyId}/backtest`, params);
       
       return response.json();
     },
     onSuccess: (data) => {
       toast({
         title: 'Backtest completed',
-        description: 'Your strategy has been successfully backtested',
+        description: 'Your strategy has been successfully backtested with advanced parameters',
       });
       setBacktest(data);
       setActiveTab('results');
@@ -169,14 +201,23 @@ const BacktestingPage: React.FC = () => {
   
   // Format the selected backtest's statistics
   const backtestStats = backtest ? [
-    { label: 'Initial Capital', value: `$${Number(backtest.initialCapital).toLocaleString()}` },
-    { label: 'Final Capital', value: `$${Number(backtest.finalCapital).toLocaleString()}` },
-    { label: 'Total Return', value: `$${Number(backtest.totalPnl).toLocaleString()}` },
+    { label: 'Initial Capital', value: `₹${Number(backtest.initialCapital).toLocaleString()}` },
+    { label: 'Final Capital', value: `₹${Number(backtest.finalCapital).toLocaleString()}` },
+    { label: 'Total Return', value: `₹${Number(backtest.totalPnl).toLocaleString()}` },
     { label: 'Return %', value: `${Number(backtest.percentReturn).toFixed(2)}%` },
+    { label: 'Annualized Return', value: backtest.annualizedReturn ? `${Number(backtest.annualizedReturn).toFixed(2)}%` : 'N/A' },
     { label: 'Number of Trades', value: backtest.trades },
     { label: 'Win Rate', value: `${Number(backtest.winRate).toFixed(2)}%` },
+    { label: 'Profit Factor', value: backtest.profitFactor ? Number(backtest.profitFactor).toFixed(2) : 'N/A' },
     { label: 'Sharpe Ratio', value: Number(backtest.sharpeRatio).toFixed(2) },
+    { label: 'Sortino Ratio', value: backtest.sortinoRatio ? Number(backtest.sortinoRatio).toFixed(2) : 'N/A' },
+    { label: 'Calmar Ratio', value: backtest.calmarRatio ? Number(backtest.calmarRatio).toFixed(2) : 'N/A' },
     { label: 'Max Drawdown', value: `${Number(backtest.maxDrawdown).toFixed(2)}%` },
+    { label: 'Avg Profit/Trade', value: backtest.averageProfit ? `₹${Number(backtest.averageProfit).toFixed(2)}` : 'N/A' },
+    { label: 'Avg Loss/Trade', value: backtest.averageLoss ? `₹${Number(backtest.averageLoss).toFixed(2)}` : 'N/A' },
+    { label: 'Max Consecutive Wins', value: backtest.maxConsecutiveWins || 'N/A' },
+    { label: 'Max Consecutive Losses', value: backtest.maxConsecutiveLosses || 'N/A' },
+    { label: 'Expectancy', value: backtest.expectancy ? `₹${Number(backtest.expectancy).toFixed(2)}` : 'N/A' },
   ] : [];
   
   if (loadingStrategies) {
@@ -268,7 +309,7 @@ const BacktestingPage: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <Label htmlFor="initial-capital">Initial Capital</Label>
                   <span className="text-sm text-neutral-500">
-                    ${initialCapital.toLocaleString()}
+                    ₹{initialCapital.toLocaleString()}
                   </span>
                 </div>
                 <Slider
@@ -280,37 +321,215 @@ const BacktestingPage: React.FC = () => {
                   onValueChange={(values) => setInitialCapital(values[0])}
                 />
                 <div className="flex justify-between text-xs text-neutral-500">
-                  <span>$1,000</span>
-                  <span>$100,000</span>
+                  <span>₹1,000</span>
+                  <span>₹100,000</span>
                 </div>
               </div>
               
-              <Accordion type="single" collapsible className="border rounded-md">
+              <Accordion 
+                type="single" 
+                collapsible 
+                className="border rounded-md"
+                value={showAdvancedParams ? "advanced-settings" : ""}
+                onValueChange={(value) => setShowAdvancedParams(value === "advanced-settings")}
+              >
                 <AccordionItem value="advanced-settings">
                   <AccordionTrigger className="px-4">Advanced Settings</AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4 space-y-4">
+                  <AccordionContent className="px-4 pb-4 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="commission">Commission (%)</Label>
-                        <Input id="commission" type="number" min="0" step="0.01" defaultValue="0.1" />
+                        <Input 
+                          id="commission" 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={commissionPercent}
+                          onChange={(e) => setCommissionPercent(parseFloat(e.target.value))}
+                        />
                         <p className="text-xs text-neutral-500">
                           Trading commission per transaction
                         </p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="slippage">Slippage (%)</Label>
-                        <Input id="slippage" type="number" min="0" step="0.01" defaultValue="0.05" />
+                        <Input 
+                          id="slippage" 
+                          type="number" 
+                          min="0" 
+                          step="0.01" 
+                          value={slippagePercent}
+                          onChange={(e) => setSlippagePercent(parseFloat(e.target.value))}
+                        />
                         <p className="text-xs text-neutral-500">
                           Estimated slippage per trade
                         </p>
                       </div>
                     </div>
                     
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="position-size">Position Size (0-1)</Label>
+                        <Input 
+                          id="position-size" 
+                          type="number" 
+                          min="0" 
+                          max="1" 
+                          step="0.1" 
+                          value={positionSizing}
+                          onChange={(e) => setPositionSizing(parseFloat(e.target.value))}
+                        />
+                        <p className="text-xs text-neutral-500">
+                          Percentage of capital to use per trade (0-1)
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="max-positions">Max. Open Positions</Label>
+                        <Input 
+                          id="max-positions" 
+                          type="number" 
+                          min="1" 
+                          step="1" 
+                          value={maxOpenPositions}
+                          onChange={(e) => setMaxOpenPositions(parseInt(e.target.value))}
+                        />
+                        <p className="text-xs text-neutral-500">
+                          Maximum concurrent positions
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="stop-loss">Stop Loss (%)</Label>
+                        <Input 
+                          id="stop-loss" 
+                          type="number" 
+                          min="0" 
+                          step="0.5" 
+                          value={stopLossPercent}
+                          onChange={(e) => setStopLossPercent(parseFloat(e.target.value))}
+                        />
+                        <p className="text-xs text-neutral-500">
+                          Automatic stop loss (0 to disable)
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="take-profit">Take Profit (%)</Label>
+                        <Input 
+                          id="take-profit" 
+                          type="number" 
+                          min="0" 
+                          step="0.5" 
+                          value={takeProfitPercent}
+                          onChange={(e) => setTakeProfitPercent(parseFloat(e.target.value))}
+                        />
+                        <p className="text-xs text-neutral-500">
+                          Automatic take profit (0 to disable)
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="risk-reward">Risk:Reward Ratio</Label>
+                        <Input 
+                          id="risk-reward" 
+                          type="number" 
+                          min="0" 
+                          step="0.1" 
+                          value={riskRewardRatio}
+                          onChange={(e) => setRiskRewardRatio(parseFloat(e.target.value))}
+                        />
+                        <p className="text-xs text-neutral-500">
+                          Target risk:reward ratio (0 to ignore)
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="time-in-force">Time In Force (days)</Label>
+                        <Input 
+                          id="time-in-force" 
+                          type="number" 
+                          min="0" 
+                          step="1" 
+                          value={timeInForceExitDays}
+                          onChange={(e) => setTimeInForceExitDays(parseInt(e.target.value))}
+                        />
+                        <p className="text-xs text-neutral-500">
+                          Auto-exit after N days (0 to disable)
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="market-conditions">Market Conditions</Label>
+                        <Select 
+                          value={marketConditions} 
+                          onValueChange={setMarketConditions}
+                        >
+                          <SelectTrigger id="market-conditions">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Conditions</SelectItem>
+                            <SelectItem value="bull">Bull Market</SelectItem>
+                            <SelectItem value="bear">Bear Market</SelectItem>
+                            <SelectItem value="sideways">Sideways Market</SelectItem>
+                            <SelectItem value="volatile">High Volatility</SelectItem>
+                            <SelectItem value="low-volatile">Low Volatility</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-neutral-500">
+                          Test specific market conditions
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="data-frequency">Data Frequency</Label>
+                        <Select 
+                          value={dataFrequency} 
+                          onValueChange={setDataFrequency}
+                        >
+                          <SelectTrigger id="data-frequency">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1m">1 Minute</SelectItem>
+                            <SelectItem value="5m">5 Minutes</SelectItem>
+                            <SelectItem value="15m">15 Minutes</SelectItem>
+                            <SelectItem value="30m">30 Minutes</SelectItem>
+                            <SelectItem value="1h">1 Hour</SelectItem>
+                            <SelectItem value="4h">4 Hours</SelectItem>
+                            <SelectItem value="1d">1 Day</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-neutral-500">
+                          Timeframe for historical data
+                        </p>
+                      </div>
+                    </div>
+                    
                     <div className="space-y-2">
-                      <Label htmlFor="position-size">Position Size (%)</Label>
-                      <Input id="position-size" type="number" min="0" max="100" step="1" defaultValue="100" />
+                      <Label htmlFor="optimization-target">Optimization Target</Label>
+                      <Select 
+                        value={optimizationTarget} 
+                        onValueChange={setOptimizationTarget}
+                      >
+                        <SelectTrigger id="optimization-target">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sharpe">Sharpe Ratio</SelectItem>
+                          <SelectItem value="returns">Total Returns</SelectItem>
+                          <SelectItem value="drawdown">Minimize Drawdown</SelectItem>
+                          <SelectItem value="consistency">Consistency</SelectItem>
+                          <SelectItem value="win-rate">Win Rate</SelectItem>
+                          <SelectItem value="profit-factor">Profit Factor</SelectItem>
+                          <SelectItem value="calmar">Calmar Ratio</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <p className="text-xs text-neutral-500">
-                        Percentage of capital to use per trade
+                        Metric to optimize for parameter tuning
                       </p>
                     </div>
                   </AccordionContent>
@@ -381,12 +600,12 @@ const BacktestingPage: React.FC = () => {
                     <Card>
                       <CardContent className="p-4 flex items-start">
                         <div className="mr-4 bg-primary bg-opacity-10 p-3 rounded-full">
-                          <DollarSign className="h-5 w-5 text-primary" />
+                          <IndianRupee className="h-5 w-5 text-primary" />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-neutral-500">Total Return</p>
                           <p className={`text-2xl font-semibold ${Number(backtest.totalPnl) >= 0 ? 'text-success' : 'text-danger'}`}>
-                            {Number(backtest.totalPnl) >= 0 ? '+' : ''}${Number(backtest.totalPnl).toLocaleString()}
+                            {formatCurrency(Number(backtest.totalPnl), 0)}
                           </p>
                           <p className={`text-sm ${Number(backtest.percentReturn) >= 0 ? 'text-success' : 'text-danger'}`}>
                             {Number(backtest.percentReturn) >= 0 ? '+' : ''}{Number(backtest.percentReturn).toFixed(2)}%
@@ -477,10 +696,10 @@ const BacktestingPage: React.FC = () => {
                                     {trade.type}
                                   </span>
                                 </TableCell>
-                                <TableCell>${Number(trade.price).toFixed(2)}</TableCell>
+                                <TableCell>₹{Number(trade.price).toFixed(2)}</TableCell>
                                 <TableCell>{Number(trade.quantity).toFixed(2)}</TableCell>
                                 <TableCell className={`text-right ${Number(trade.pnl) >= 0 ? 'text-success' : 'text-danger'}`}>
-                                  {Number(trade.pnl) >= 0 ? '+' : ''}${Number(trade.pnl).toFixed(2)}
+                                  {Number(trade.pnl) >= 0 ? '+' : ''}₹{Number(trade.pnl).toFixed(2)}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -491,6 +710,98 @@ const BacktestingPage: React.FC = () => {
                   </Card>
                 </CardContent>
               </Card>
+              
+              {/* Show the advanced parameters used in this backtest */}
+              {(backtest.commissionPercent || backtest.slippagePercent || backtest.positionSizing) && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Advanced Parameters Used</CardTitle>
+                    <CardDescription>
+                      These are the specific parameters used for this backtest run
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {backtest.commissionPercent && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Commission</span>
+                          <span className="text-md">{Number(backtest.commissionPercent).toFixed(2)}%</span>
+                        </div>
+                      )}
+                      
+                      {backtest.slippagePercent && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Slippage</span>
+                          <span className="text-md">{Number(backtest.slippagePercent).toFixed(2)}%</span>
+                        </div>
+                      )}
+                      
+                      {backtest.positionSizing && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Position Sizing</span>
+                          <span className="text-md">{Number(backtest.positionSizing).toFixed(2)}</span>
+                        </div>
+                      )}
+                      
+                      {backtest.stopLossPercent > 0 && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Stop Loss</span>
+                          <span className="text-md">{Number(backtest.stopLossPercent).toFixed(2)}%</span>
+                        </div>
+                      )}
+                      
+                      {backtest.takeProfitPercent > 0 && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Take Profit</span>
+                          <span className="text-md">{Number(backtest.takeProfitPercent).toFixed(2)}%</span>
+                        </div>
+                      )}
+                      
+                      {backtest.riskRewardRatio > 0 && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Risk:Reward</span>
+                          <span className="text-md">{Number(backtest.riskRewardRatio).toFixed(2)}</span>
+                        </div>
+                      )}
+                      
+                      {backtest.maxOpenPositions > 0 && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Max Open Positions</span>
+                          <span className="text-md">{backtest.maxOpenPositions}</span>
+                        </div>
+                      )}
+                      
+                      {backtest.timeInForceExitDays > 0 && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Time In Force</span>
+                          <span className="text-md">{backtest.timeInForceExitDays} days</span>
+                        </div>
+                      )}
+                      
+                      {backtest.marketConditions && backtest.marketConditions !== 'all' && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Market Conditions</span>
+                          <span className="text-md capitalize">{backtest.marketConditions.replace('-', ' ')} Market</span>
+                        </div>
+                      )}
+                      
+                      {backtest.dataFrequency && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Data Frequency</span>
+                          <span className="text-md">{backtest.dataFrequency}</span>
+                        </div>
+                      )}
+                      
+                      {backtest.optimizationTarget && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-neutral-500">Optimization Target</span>
+                          <span className="text-md capitalize">{backtest.optimizationTarget.replace('-', ' ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </TabsContent>

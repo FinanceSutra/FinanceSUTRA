@@ -36,11 +36,10 @@ export default function CreateWorkflow() {
   const [isLoading, setIsLoading] = useState(isEditing);
 
   // Get existing workflow data if editing
-  const { data: workflow, isLoading: isLoadingWorkflow } = useQuery<WorkflowFormValues>({
+  const { data: workflow, isLoading: isLoadingWorkflow } = useQuery({
     queryKey: ['/api/workflows', id],
     enabled: isEditing,
   });
-  
 
   // Initialize form with default values
   const form = useForm<WorkflowFormValues>({

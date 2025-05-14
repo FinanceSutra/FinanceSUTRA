@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { formatCurrency, formatPercentage } from '@/lib/formatters';
 import { AlertTriangle, BarChart4, Target, DollarSign, TrendingDown, Settings, Activity, ShieldAlert, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/use-auth';
+import { useLocation } from 'wouter';
 import {
   Card,
   CardContent,
@@ -38,7 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -291,9 +293,18 @@ const defaultPositionSizingRules: PositionSizingRule[] = [
 
 const RiskManagement: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [riskLimits, setRiskLimits] = useState<RiskLimit[]>(defaultRiskLimits);
   const [positionRules, setPositionRules] = useState<PositionSizingRule[]>(defaultPositionSizingRules);
+  
+  // Redirect to auth if user is not logged in
+  useEffect(() => {
+    if (user === null) {
+      setLocation('/auth');
+    }
+  }, [user, setLocation]);
   const [newRiskLimit, setNewRiskLimit] = useState<Partial<RiskLimit>>({
     type: 'account',
     metric: 'drawdown',
@@ -311,20 +322,28 @@ const RiskManagement: React.FC = () => {
   const [isAddingRiskLimit, setIsAddingRiskLimit] = useState(false);
   const [isAddingPositionRule, setIsAddingPositionRule] = useState(false);
 
-  // Query portfolio risk metrics from API
+  // Query portfolio risk metrics from API only when authenticated
   const { 
     data: portfolioRisk = defaultPortfolioRisk, 
-    isLoading: isLoadingRiskData 
+    isLoading: isLoadingRiskData,
+    isError: isRiskDataError
   } = useQuery<PortfolioRisk>({
     queryKey: ['/api/risk/portfolio'],
+    retry: 3,
+    retryDelay: 1000,
+    enabled: !!user, // Only run query when user is authenticated
   });
 
-  // Query risk limits from API
+  // Query risk limits from API only when authenticated
   const { 
     data: apiRiskLimits = [], 
-    isLoading: isLoadingRiskLimits 
+    isLoading: isLoadingRiskLimits,
+    isError: isRiskLimitsError
   } = useQuery<RiskLimit[]>({
-    queryKey: ['/api/risk/limits']
+    queryKey: ['/api/risk/limits'],
+    retry: 3,
+    retryDelay: 1000,
+    enabled: !!user, // Only run query when user is authenticated
   });
 
   // Update state when API data arrives
@@ -334,12 +353,16 @@ const RiskManagement: React.FC = () => {
     }
   }, [apiRiskLimits]);
 
-  // Query position sizing rules from API
+  // Query position sizing rules from API only when authenticated
   const { 
     data: apiPositionRules = [], 
-    isLoading: isLoadingPositionRules 
+    isLoading: isLoadingPositionRules,
+    isError: isPositionRulesError
   } = useQuery<PositionSizingRule[]>({
-    queryKey: ['/api/risk/position-rules']
+    queryKey: ['/api/risk/position-rules'],
+    retry: 3,
+    retryDelay: 1000,
+    enabled: !!user, // Only run query when user is authenticated
   });
   
   // Update state when API data arrives
@@ -483,6 +506,17 @@ const RiskManagement: React.FC = () => {
   });
 
   const isLoading = isLoadingRiskData || isLoadingRiskLimits || isLoadingPositionRules;
+  
+  // Handle error conditions
+  React.useEffect(() => {
+    if (isRiskDataError || isRiskLimitsError || isPositionRulesError) {
+      toast({
+        title: "Error loading risk management data",
+        description: "There was a problem loading the risk management data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [isRiskDataError, isRiskLimitsError, isPositionRulesError, toast]);
 
   const toggleRiskLimitActive = (id: string) => {
     const limit = riskLimits.find(l => l.id === id);
@@ -579,6 +613,47 @@ const RiskManagement: React.FC = () => {
     return value > 0 ? 'text-green-600' : value < 0 ? 'text-red-600' : 'text-gray-600';
   };
 
+  // If user is not logged in and we're not already redirecting, show a login prompt
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6">
+        <AlertTriangle className="w-12 h-12 text-yellow-500 mb-4" />
+        <h2 className="text-lg font-medium mb-2">Authentication Required</h2>
+        <p className="text-gray-500 mb-4 text-center">
+          Please log in to access the Risk Management features.
+        </p>
+        <Button
+          onClick={() => setLocation('/auth')}
+        >
+          Go to Login
+        </Button>
+      </div>
+    );
+  }
+
+  // If there's an error, show a fallback empty state with a retry button
+  if (isRiskDataError || isRiskLimitsError || isPositionRulesError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6">
+        <AlertTriangle className="w-12 h-12 text-yellow-500 mb-4" />
+        <h2 className="text-lg font-medium mb-2">Unable to load risk management data</h2>
+        <p className="text-gray-500 mb-4 text-center">
+          There was a problem loading the risk management data. This could be due to a network issue.
+        </p>
+        <Button
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['/api/risk/portfolio'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/risk/limits'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/risk/position-rules'] });
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  // Show loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -1102,8 +1177,8 @@ const RiskManagement: React.FC = () => {
                         <TableCell>{rule.strategy}</TableCell>
                         <TableCell>
                           <HoverCard>
-                            <HoverCardTrigger asChild>
-                              <div className="flex items-center">
+                            <HoverCardTrigger>
+                              <div className="flex items-center cursor-pointer">
                                 <span>
                                   {rule.method === 'fixed' ? 'Fixed Size' : 
                                    rule.method === 'volatility' ? 'Volatility Adjusted' : 

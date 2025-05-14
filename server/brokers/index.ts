@@ -98,6 +98,12 @@ export function createBrokerAdapter(connection: BrokerConnection): IBrokerAdapte
       return new AlpacaAdapter(connection);
     case 'oanda':
       return new OandaAdapter(connection);
+    case 'zerodha':
+      return new ZerodhaAdapter(connection);
+    case 'upstox':
+      return new UpstoxAdapter(connection);
+    case 'paper_trading': // Virtual paper trading
+      return new AlpacaAdapter({ ...connection, environment: 'paper' });
     default:
       throw new Error(`Broker ${connection.broker} is not supported`);
   }
@@ -108,10 +114,14 @@ import { InteractiveBrokersAdapter } from './interactive-brokers';
 import { TDAmeritrade } from './td-ameritrade';
 import { AlpacaAdapter } from './alpaca';
 import { OandaAdapter } from './oanda';
+import { ZerodhaAdapter } from './zerodha';
+import { UpstoxAdapter } from './upstox';
 
 export {
   InteractiveBrokersAdapter,
   TDAmeritrade,
   AlpacaAdapter,
-  OandaAdapter
+  OandaAdapter,
+  ZerodhaAdapter,
+  UpstoxAdapter
 };

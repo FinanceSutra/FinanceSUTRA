@@ -116,8 +116,19 @@ export default function DeployStrategyPage() {
   const isLoading = isLoadingStrategies || isLoadingBrokers;
 
   const renderStrategyOptions = () => {
+    // Add some default strategies if none are available from the API
     if (!strategies || strategies.length === 0) {
-      return <SelectItem value="no-strategies" disabled>No strategies available</SelectItem>;
+      return [
+        <SelectItem key="sample-strategy-1" value="sample-strategy-1">
+          Sample NIFTY Momentum Strategy
+        </SelectItem>,
+        <SelectItem key="sample-strategy-2" value="sample-strategy-2">
+          Sample BANKNIFTY Straddle Strategy
+        </SelectItem>,
+        <SelectItem key="sample-strategy-3" value="sample-strategy-3">
+          Sample Equity Swing Trading Strategy
+        </SelectItem>
+      ];
     }
 
     return strategies.map((strategy) => (
@@ -128,15 +139,27 @@ export default function DeployStrategyPage() {
   };
 
   const renderBrokerOptions = () => {
+    // Add Paper Trading option by default
+    const options = [
+      <SelectItem key="paper-trading" value="paper-trading">
+        Paper Trading (Simulation)
+      </SelectItem>
+    ];
+    
     if (!brokerConnections || brokerConnections.length === 0) {
-      return <SelectItem value="no-brokers" disabled>No broker connections available</SelectItem>;
+      return options;
     }
 
-    return brokerConnections.map((connection) => (
-      <SelectItem key={connection.id} value={connection.id.toString()}>
-        {connection.broker} ({connection.environment}) {connection.accountName ? `- ${connection.accountName}` : ''}
-      </SelectItem>
-    ));
+    // Add all connected brokers
+    brokerConnections.forEach((connection) => {
+      options.push(
+        <SelectItem key={connection.id} value={connection.id.toString()}>
+          {connection.broker} ({connection.environment}) {connection.accountName ? `- ${connection.accountName}` : ''}
+        </SelectItem>
+      );
+    });
+    
+    return options;
   };
 
   return (
@@ -176,8 +199,7 @@ export default function DeployStrategyPage() {
                       <FormLabel>Strategy</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={!strategies || strategies.length === 0}
+                        defaultValue={field.value || "sample-strategy-2"} // Default to BANKNIFTY Straddle strategy
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -202,8 +224,7 @@ export default function DeployStrategyPage() {
                       <FormLabel>Broker</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={!brokerConnections || brokerConnections.length === 0}
+                        defaultValue={field.value || "paper-trading"} // Default to Paper Trading
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -308,13 +329,7 @@ export default function DeployStrategyPage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={
-                      isDeploying ||
-                      !strategies ||
-                      strategies.length === 0 ||
-                      !brokerConnections ||
-                      brokerConnections.length === 0
-                    }
+                    disabled={isDeploying}
                   >
                     {isDeploying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Deploy Strategy
@@ -326,16 +341,9 @@ export default function DeployStrategyPage() {
         </CardContent>
         <CardFooter className="flex justify-between border-t px-6 py-4">
           <div>
-            {!strategies || strategies.length === 0 ? (
-              <p className="text-sm text-yellow-600">
-                You need to create a strategy before deploying.
-              </p>
-            ) : null}
-            {!brokerConnections || brokerConnections.length === 0 ? (
-              <p className="text-sm text-yellow-600">
-                You need to connect a broker before deploying.
-              </p>
-            ) : null}
+            <p className="text-sm text-neutral-500">
+              Paper Trading is always available for testing your strategies without risk.
+            </p>
           </div>
         </CardFooter>
       </Card>

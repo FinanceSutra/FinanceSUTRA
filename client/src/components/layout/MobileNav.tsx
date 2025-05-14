@@ -51,7 +51,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
             
             <nav className="mt-5">
               <Link href="/">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -61,11 +61,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <LayoutDashboard className="w-5 h-5" />
                   <span className="ml-3">Dashboard</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/strategies">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location.startsWith('/strategies')
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -75,11 +75,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <Code className="w-5 h-5" />
                   <span className="ml-3">Strategies</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/charts">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/charts'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -89,11 +89,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <LineChart className="w-5 h-5" />
                   <span className="ml-3">Charts</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/backtesting">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/backtesting'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -103,11 +103,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <BarChart3 className="w-5 h-5" />
                   <span className="ml-3">Backtesting</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/deployed-strategies">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/deployed-strategies' || location === '/deploy-strategy'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -117,11 +117,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <Play className="w-5 h-5" />
                   <span className="ml-3">Deployed Strategies</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/risk-management">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/risk-management'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -131,11 +131,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <ShieldAlert className="w-5 h-5" />
                   <span className="ml-3">Risk Management</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/reports">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/reports'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -145,11 +145,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <DollarSign className="w-5 h-5" />
                   <span className="ml-3">P&L Reports</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/broker-setup">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/broker-setup'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -159,11 +159,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <Sliders className="w-5 h-5" />
                   <span className="ml-3">Broker Setup</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/billing">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/billing'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -173,11 +173,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <CreditCard className="w-5 h-5" />
                   <span className="ml-3">Billing</span>
-                </a>
+                </div>
               </Link>
               
               <Link href="/settings">
-                <a
+                <div
                   className={`flex items-center px-4 py-3 ${
                     location === '/settings'
                       ? 'text-primary bg-neutral-900 border-l-4 border-primary'
@@ -187,7 +187,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onOpenChange }) => {
                 >
                   <Settings className="w-5 h-5" />
                   <span className="ml-3">Settings</span>
-                </a>
+                </div>
               </Link>
             </nav>
             

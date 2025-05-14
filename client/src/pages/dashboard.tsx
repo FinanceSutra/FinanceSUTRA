@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { ArrowUpRight, Plus } from 'lucide-react';
+import { ArrowUpRight, Plus, DollarSign, FileText, ArrowLeftRight, TrendingUp, IndianRupee } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import PerformanceChart from '@/components/charts/PerformanceChart';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency, formatPercentage } from '@/lib/formatters';
 import type { Strategy, Trade } from '@shared/schema';
 
 interface DashboardCardProps {
@@ -170,10 +171,10 @@ const Dashboard: React.FC = () => {
         {/* Total P&L Card */}
         <DashboardCard
           title="Total P&L"
-          value={`$${totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={formatCurrency(totalPnL, 2)}
           change={`${totalPercentPnL}%`}
           positive={totalPnL > 0}
-          icon={<DollarSign />}
+          icon={<IndianRupee />}
           iconBgClass="bg-success bg-opacity-10"
           iconColor="text-success"
         />
@@ -246,9 +247,9 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="text-right">
                           {strategy.id % 2 === 0 ? (
-                            <p className="font-medium text-success">+$1,204.30</p>
+                            <p className="font-medium text-success">{formatCurrency(1204.30, 2)}</p>
                           ) : (
-                            <p className="font-medium text-danger">-$623.75</p>
+                            <p className="font-medium text-danger">{formatCurrency(-623.75, 2)}</p>
                           )}
                           <p className={`text-xs ${strategy.id % 2 === 0 ? 'text-success' : 'text-danger'}`}>
                             {strategy.id % 2 === 0 ? '+8.2%' : '-4.1%'}
@@ -267,19 +268,19 @@ const Dashboard: React.FC = () => {
                   <div className="py-8 text-center text-neutral-500">
                     <p>No strategies available</p>
                     <Link href="/strategies/editor">
-                      <a className="mt-2 text-primary hover:underline inline-flex items-center">
+                      <span className="mt-2 text-primary hover:underline inline-flex items-center cursor-pointer">
                         Create your first strategy
                         <ArrowUpRight className="ml-1 w-4 h-4" />
-                      </a>
+                      </span>
                     </Link>
                   </div>
                 )}
               </div>
               <div className="p-4 bg-neutral-50 rounded-b-lg">
                 <Link href="/strategies">
-                  <a className="w-full block py-2 text-sm text-primary font-medium hover:text-primary-dark text-center">
+                  <span className="w-full block py-2 text-sm text-primary font-medium hover:text-primary-dark text-center cursor-pointer">
                     View All Strategies
-                  </a>
+                  </span>
                 </Link>
               </div>
             </CardContent>
@@ -325,11 +326,11 @@ const Dashboard: React.FC = () => {
                           {new Date(trade.openedAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-500">
-                          ${Number(trade.price).toFixed(2)}
+                          {formatCurrency(Number(trade.price), 2)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                           <span className={Number(trade.pnl) > 0 ? 'text-success' : 'text-danger'}>
-                            {Number(trade.pnl) > 0 ? '+' : ''}{Number(trade.pnl).toFixed(2)}
+                            {formatCurrency(Number(trade.pnl), 2)}
                           </span>
                         </td>
                       </tr>
@@ -346,9 +347,9 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="p-4 bg-neutral-50 rounded-b-lg">
               <Link href="/reports">
-                <a className="w-full block py-2 text-sm text-primary font-medium hover:text-primary-dark text-center">
+                <span className="w-full block py-2 text-sm text-primary font-medium hover:text-primary-dark text-center cursor-pointer">
                   View All Trades
-                </a>
+                </span>
               </Link>
             </div>
           </CardContent>
@@ -358,7 +359,7 @@ const Dashboard: React.FC = () => {
   );
 };
 
-// Import here to avoid circular dependencies
-import { PieChart, ArrowLeftRight, DollarSign, FileText } from 'lucide-react';
+// Added missing import for PieChart
+import { PieChart } from 'lucide-react';
 
 export default Dashboard;

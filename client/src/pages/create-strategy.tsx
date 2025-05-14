@@ -135,6 +135,7 @@ const CreateStrategy: React.FC = () => {
   // Create save strategy mutation
   const saveStrategyMutation = useMutation({
     mutationFn: async (data: Partial<Strategy>) => {
+      // console.log(data);
       // Create new strategy
       return apiRequest('POST', '/api/strategies', data);
     },
@@ -206,7 +207,7 @@ const CreateStrategy: React.FC = () => {
         description: "Strategy name is required",
         variant: "destructive",
       });
-      return;
+      
     }
     
     if (!selectedTemplate) {
@@ -215,6 +216,21 @@ const CreateStrategy: React.FC = () => {
         description: "Please select a strategy template",
         variant: "destructive",
       });
+// const strategyData = {
+//         strategyName,
+//         strategyDescription,
+//         symbol,
+//         timeframe,
+//         // quantity,
+//         // stopLoss,
+//         // entryDelay,
+//         // exitBeforeClose,
+//         template: selectedTemplate,
+//         parameters,
+//         isActive,
+//       };
+//       console.log(strategyData);
+
       return;
     }
     
@@ -407,15 +423,7 @@ class OptionsStraddleStrategy:
             </p>
           </div>
         </div>
-        <div className="mt-4 md:mt-0">
-          <Button 
-            onClick={handleCreateStrategy} 
-            disabled={saveStrategyMutation.isPending || !selectedTemplate}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Strategy
-          </Button>
-        </div>
+
       </div>
       
       {/* Strategy Form */}
@@ -562,6 +570,15 @@ class OptionsStraddleStrategy:
               </CardContent>
             </Card>
           )}
+        </div>
+         <div className="mt-4 md:mt-0 flex justify-center col-span-1 lg:col-start-2">
+          <Button 
+            onClick={handleCreateStrategy} 
+            disabled={saveStrategyMutation.isPending || !selectedTemplate}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Strategy
+          </Button>
         </div>
       </div>
     </div>

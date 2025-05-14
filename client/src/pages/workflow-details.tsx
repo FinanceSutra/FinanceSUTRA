@@ -97,19 +97,10 @@ export default function WorkflowDetails() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Fetch workflow data
-  // Fetch workflow data
-const { data: workflow, isLoading: isLoadingWorkflow, error } = useQuery<TradingWorkflow>({
-  queryKey: ['/api/workflows', id],
-  queryFn: async () => {
-    if (id) {
-      const response = await apiRequest("GET", `/api/workflows/${id}`);
-      return response.json();
-    }
-    return null;
-  },
-  retry: 1,
-});
-
+  const { data: workflow, isLoading: isLoadingWorkflow, error } = useQuery({
+    queryKey: ['/api/workflows', id],
+    retry: 1,
+  });
 
   // Fetch workflow steps
   const { data: workflowSteps = [], isLoading: isLoadingSteps } = useQuery({

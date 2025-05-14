@@ -13,8 +13,8 @@ import { Switch } from '@/components/ui/switch';
 import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useMarketData } from '@/hooks/useMarketData';
-import useMarketDataWebSocket from '@/hooks/useMarketDataWebSocket';
-import Header from '@/components/layout/Header';
+import { useMarketDataWebSocket } from '@/hooks/useMarketDataWebSocket';
+import Header from '@/components/Header';
 import LightweightCandlestickChart from '@/components/charts/LightweightCandlestickChart';
 
 // Available timeframes for the chart
@@ -63,8 +63,13 @@ const AVAILABLE_SYMBOLS = [
   { value: 'CRYPTO:ETHUSDT', label: 'Ethereum/USDT' }
 ];
 
-// Import chart indicator type from the chart component
-import { ChartIndicator } from '@/components/charts/LightweightCandlestickChart';
+// Define indicator data structure for chart
+interface ChartIndicator {
+  type: string;
+  period: number;
+  color: string;
+  data: { time: string; value: number }[];
+}
 
 // Format symbol name for display in chart title
 function formatSymbolName(symbol: string): string {
@@ -131,7 +136,7 @@ const Charts: React.FC = () => {
         description: "Real-time updates have been disabled",
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "WebSocket Error",
         description: error.message,
@@ -152,13 +157,13 @@ const Charts: React.FC = () => {
   // Default indicators for the chart
   const indicatorsData: ChartIndicator[] = [
     {
-      type: 'ma',
+      type: 'sma',
       period: 20,
       color: '#3182CE',
       data: []
     },
     {
-      type: 'ma',
+      type: 'sma',
       period: 50,
       color: '#805AD5',
       data: []
@@ -167,7 +172,7 @@ const Charts: React.FC = () => {
   
   // Prepare display data with fallback
   const displayData = marketData ? 
-    marketData.map((item: any) => ({
+    marketData.map(item => ({
       time: new Date(item.timestamp).toISOString(),
       open: parseFloat(item.open),
       high: parseFloat(item.high),

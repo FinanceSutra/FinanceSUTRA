@@ -328,6 +328,7 @@ const ReportsPage: React.FC = () => {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="trades">Trades</TabsTrigger>
           <TabsTrigger value="strategies">Strategies</TabsTrigger>
+          <TabsTrigger value="heatmap">Performance Heatmap</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
@@ -601,6 +602,260 @@ const ReportsPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="heatmap" className="space-y-6">
+          {/* Import and use HeatmapChart here */}
+          <div>
+            {(() => {
+              if (!filteredTrades || filteredTrades.length === 0) {
+                return (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-neutral-500">
+                      No trade data available for generating the heatmap
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Import HeatmapChart
+              const HeatmapChart = require('@/components/charts/HeatmapChart').default;
+              
+              // Define heatmap dimensions
+              const timeframes = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'];
+              const marketConditions = ['bull', 'bear', 'sideways', 'volatile', 'low-volatile'];
+              
+              // Generate heatmap data based on trades
+              // This function categorizes trades by timeframe and market condition
+              const generateHeatmapData = () => {
+                // Initialize data structure
+                const heatmapData: {
+                  [key: string]: {
+                    [key: string]: {
+                      count: number;
+                      wins: number;
+                      losses: number;
+                      totalPnl: number;
+                    }
+                  }
+                } = {};
+                
+                // Initialize all combinations to avoid empty cells
+                timeframes.forEach(timeframe => {
+                  heatmapData[timeframe] = {};
+                  marketConditions.forEach(condition => {
+                    heatmapData[timeframe][condition] = {
+                      count: 0,
+                      wins: 0,
+                      losses: 0,
+                      totalPnl: 0
+                    };
+                  });
+                });
+                
+                // Group trades by strategy to determine market condition based on timeframe
+                const strategiesMap = strategies && strategies.reduce((acc: any, s: Strategy) => {
+                  acc[s.id] = s;
+                  return acc;
+                }, {});
+                
+                // Process each trade
+                filteredTrades.forEach(trade => {
+                  const strategy = strategiesMap && strategiesMap[trade.strategyId];
+                  if (!strategy) return;
+                  
+                  const timeframe = strategy.timeframe || '1d';
+                  
+                  // Determine market condition based on PnL trend
+                  // In a real application, you would have more sophisticated logic
+                  let marketCondition = 'sideways';
+                  const pnl = Number(trade.pnl || 0);
+                  
+                  if (pnl > 0) {
+                    marketCondition = Math.abs(pnl) > 1000 ? 'bull' : 'volatile';
+                  } else if (pnl < 0) {
+                    marketCondition = Math.abs(pnl) > 1000 ? 'bear' : 'low-volatile';
+                  }
+                  
+                  // Accumulate data
+                  const cell = heatmapData[timeframe][marketCondition];
+                  cell.count += 1;
+                  
+                  if (pnl > 0) {
+                    cell.wins += 1;
+                  } else {
+                    cell.losses += 1;
+                  }
+                  
+                  cell.totalPnl += pnl;
+                });
+                
+                // Convert to format expected by HeatmapChart
+                const formattedData = [];
+                
+                for (const timeframe of timeframes) {
+                  for (const condition of marketConditions) {
+                    const cell = heatmapData[timeframe][condition];
+                    if (cell.count > 0) {
+                      formattedData.push({
+                        x: timeframe,
+                        y: condition,
+                        count: cell.count,
+                        winRate: (cell.wins / cell.count) * 100,
+                        totalPnl: cell.totalPnl,
+                        avgPnl: cell.totalPnl / cell.count,
+                        value: (cell.wins / cell.count) * 100 // Default value is win rate
+                      });
+                    } else {
+                      // Add empty cell with default values
+                      formattedData.push({
+                        x: timeframe,
+                        y: condition,
+                        count: 0,
+                        winRate: 0,
+                        totalPnl: 0,
+                        avgPnl: 0,
+                        value: 0
+                      });
+                    }
+                  }
+                }
+                
+                return formattedData;
+              };
+              
+              // Define metrics for the heatmap
+              const metrics = [
+                {
+                  id: 'winRate',
+                  label: 'Win Rate (%)',
+                  description: 'Percentage of winning trades',
+                  valueFormatter: (v: number) => `${v.toFixed(1)}%`,
+                  colorScale: (v: number) => {
+                    // Color scale from red to green
+                    if (v === 0) return '#f1f5f9'; // Light gray for empty cells
+                    if (v < 30) return '#ef4444'; // Red
+                    if (v < 40) return '#f97316'; // Orange
+                    if (v < 50) return '#eab308'; // Yellow
+                    if (v < 60) return '#84cc16'; // Light green
+                    return '#22c55e'; // Green
+                  },
+                  domain: [0, 100],
+                  defaultValue: 0
+                },
+                {
+                  id: 'totalPnl',
+                  label: 'Total P&L (₹)',
+                  description: 'Total profit/loss for each combination',
+                  valueFormatter: (v: number) => formatCurrency(v),
+                  colorScale: (v: number) => {
+                    // Color scale based on positive/negative P&L
+                    if (v === 0) return '#f1f5f9'; // Light gray for empty cells
+                    if (v < -10000) return '#ef4444'; // Red
+                    if (v < -5000) return '#f97316'; // Orange
+                    if (v < 0) return '#fbbf24'; // Yellow
+                    if (v < 5000) return '#84cc16'; // Light green
+                    if (v < 10000) return '#22c55e'; // Green
+                    return '#15803d'; // Dark green
+                  },
+                  domain: [-15000, 15000],
+                  defaultValue: 0
+                },
+                {
+                  id: 'avgPnl',
+                  label: 'Avg P&L per Trade (₹)',
+                  description: 'Average profit/loss per trade',
+                  valueFormatter: (v: number) => formatCurrency(v),
+                  colorScale: (v: number) => {
+                    // Color scale based on positive/negative average P&L
+                    if (v === 0) return '#f1f5f9'; // Light gray for empty cells
+                    if (v < -1000) return '#ef4444'; // Red
+                    if (v < -500) return '#f97316'; // Orange
+                    if (v < 0) return '#fbbf24'; // Yellow
+                    if (v < 500) return '#84cc16'; // Light green
+                    if (v < 1000) return '#22c55e'; // Green
+                    return '#15803d'; // Dark green
+                  },
+                  domain: [-1500, 1500],
+                  defaultValue: 0
+                },
+                {
+                  id: 'count',
+                  label: 'Trade Count',
+                  description: 'Number of trades',
+                  valueFormatter: (v: number) => v.toString(),
+                  colorScale: (v: number) => {
+                    // Color scale based on trade count
+                    if (v === 0) return '#f1f5f9'; // Light gray for empty cells
+                    if (v < 5) return '#f0f9ff'; // Very light blue
+                    if (v < 10) return '#bae6fd'; // Light blue
+                    if (v < 20) return '#7dd3fc'; // Blue
+                    if (v < 50) return '#0ea5e9'; // Medium blue
+                    return '#0369a1'; // Dark blue
+                  },
+                  domain: [0, 100],
+                  defaultValue: 0
+                }
+              ];
+              
+              const heatmapData = generateHeatmapData();
+              
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    <HeatmapChart
+                      data={heatmapData}
+                      xAxisCategories={timeframes}
+                      yAxisCategories={marketConditions}
+                      metrics={metrics}
+                      title="Trading Performance Heatmap"
+                      description="Analyze performance across different timeframes and market conditions"
+                      height={500}
+                    />
+                  </div>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Understanding the Heatmap</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Timeframes</h3>
+                          <p className="text-muted-foreground">
+                            The horizontal axis represents different trading timeframes from 1-minute (1m) to daily (1d) charts.
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Market Conditions</h3>
+                          <p className="text-muted-foreground">
+                            The vertical axis represents different market conditions:
+                          </p>
+                          <ul className="mt-2 space-y-1 list-disc pl-6">
+                            <li><span className="font-medium">Bull</span> - Strong upward trending market</li>
+                            <li><span className="font-medium">Bear</span> - Strong downward trending market</li>
+                            <li><span className="font-medium">Sideways</span> - Range-bound, low directional movement</li>
+                            <li><span className="font-medium">Volatile</span> - High price fluctuations with directional movement</li>
+                            <li><span className="font-medium">Low-Volatile</span> - Minimal price fluctuations</li>
+                          </ul>
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">How to Use</h3>
+                          <p className="text-muted-foreground">
+                            Identify your strongest performing combinations of timeframes and market conditions.
+                            Focus on trading strategies that align with the green (high-performing) cells and avoid or
+                            revise strategies in red (underperforming) cells.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
