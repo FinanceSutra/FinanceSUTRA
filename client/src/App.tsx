@@ -507,6 +507,7 @@ function Router() {
       <Route path = '/workflow.:id' component={WorkflowDetails} />
       <Route path='/direct-trade' component={DirectTrade} />
       <AuthProvider>
+      <Route path='/learning' component={LearningPage} />
         <Route path = '/auth' component={AuthPage} />
         <Route path="/risk-management" component={RiskManagement} />
       </AuthProvider>
