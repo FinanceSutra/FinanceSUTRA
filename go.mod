@@ -21,6 +21,7 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/samber/lo v1.49.1 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/uptrace/bun v1.2.11 // indirect
 	github.com/uptrace/bun/dialect/pgdialect v1.2.11 // indirect
