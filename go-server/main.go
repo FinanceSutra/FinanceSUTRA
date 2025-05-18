@@ -37,6 +37,38 @@ func main() {
     http.HandleFunc("/users/username/", h.GetUserByUsername)
 
 
+    
+
+    // Automigrate strategies model
+    db.AutoMigrate(&models.Strategy{})
+
+    h1 := &handlers.StrategyHandler{DB: db}
+
+    http.HandleFunc("/strategies", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method == http.MethodGet {
+            h1.GetStrategies(w, r)
+        } else if r.Method == http.MethodPost {
+            h1.CreateStrategy(w, r)
+        } else {
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
+    // Handle /strategies/{id} crud operations
+    http.HandleFunc("/strategies/", func(w http.ResponseWriter, r *http.Request) {
+        // crude way to get method and id
+        switch r.Method {
+        case http.MethodGet:
+            h1.GetStrategy(w, r)
+        case http.MethodPut:
+            h1.UpdateStrategy(w, r)
+        default:
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
     log.Println("Server started on :8080")
     log.Fatal(http.ListenAndServe(":8080", nil))
+
 }
+
