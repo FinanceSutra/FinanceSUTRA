@@ -20,7 +20,7 @@ type User = {
 };
 
 type AuthContextType = {
-  user: User | null | undefined;
+  user: User | null;
   isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<User, Error, LoginData>;
@@ -41,9 +41,8 @@ type RegisterData = {
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
-// alert(AuthContext);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // console.log(children);
   const { toast } = useToast();
   const {
     data: user,

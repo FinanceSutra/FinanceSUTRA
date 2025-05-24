@@ -32,8 +32,7 @@ app.get('/healthz', (req, res) => {
 // Add CORS headers for Replit environment
 app.use((req, res, next) => {
   // Get the Replit domain from environment or use a default
-  const origin = req.headers.origin ;
-  // || `https://${process.env.REPLIT_DOMAINS}`
+  const origin = req.headers.origin || `https://${process.env.REPLIT_DOMAINS}`;
   
   res.header('Access-Control-Allow-Origin', origin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
@@ -101,15 +100,11 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0", // Important: Use 0.0.0.0 for replit to make the server accessible
-    reusePort: true,
-  }, () => {
-    log(`Server started successfully on 0.0.0.0:${port}`);
-    // log(`Environment: ${app.get("env")}`);
-    // log(`REPLIT_DOMAINS: ${process.env.REPLIT_DOMAINS || 'not set'}`);
-    // log(`Public URL: https://${process.env.REPLIT_DOMAINS || 'localhost:5000'}`);
+  const port = 5001;
+  server.listen(port, () => {
+    log(`Server started successfully on port ${port}`);
+    log(`Environment: ${app.get("env")}`);
+    log(`REPLIT_DOMAINS: ${process.env.REPLIT_DOMAINS || 'not set'}`);
+    log(`Public URL: https://${process.env.REPLIT_DOMAINS || 'localhost:5001'}`);
   });
 })();

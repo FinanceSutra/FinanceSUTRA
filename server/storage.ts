@@ -11,7 +11,24 @@ import {
   type MarketExposure, type InsertMarketExposure,
   type SectorExposure, type InsertSectorExposure,
   type PortfolioRisk, type InsertPortfolioRisk,
-  type StrategyCorrelation, type InsertStrategyCorrelation
+  type StrategyCorrelation, type InsertStrategyCorrelation,
+  userPreferences, type UserPreference, type InsertUserPreference,
+  strategyRecommendations, type StrategyRecommendation, type InsertStrategyRecommendation,
+  // Learning module imports
+  learningModules, type LearningModule, type InsertLearningModule,
+  lessons, type Lesson, type InsertLesson,
+  quizzes, type Quiz, type InsertQuiz,
+  quizQuestions, type QuizQuestion, type InsertQuizQuestion,
+  quizAnswers, type QuizAnswer, type InsertQuizAnswer,
+  userProgress, type UserProgress, type InsertUserProgress,
+  badges, type Badge, type InsertBadge,
+  userBadges, type UserBadge, type InsertUserBadge,
+  // Trading Workflow Automation imports
+  tradingWorkflows, type TradingWorkflow, type InsertTradingWorkflow,
+  workflowSteps, type WorkflowStep, type InsertWorkflowStep,
+  workflowConditions, type WorkflowCondition, type InsertWorkflowCondition,
+  workflowActions, type WorkflowAction, type InsertWorkflowAction,
+  workflowExecutionLogs, type WorkflowExecutionLog, type InsertWorkflowExecutionLog
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -31,6 +48,19 @@ export interface IStorage {
   createStrategy(strategy: InsertStrategy): Promise<Strategy>;
   updateStrategy(id: number, strategy: Partial<Strategy>): Promise<Strategy>;
   deleteStrategy(id: number): Promise<boolean>;
+  
+  // User Preferences operations
+  getUserPreference(userId: number): Promise<UserPreference | undefined>;
+  saveUserPreference(preference: InsertUserPreference): Promise<UserPreference>;
+  updateUserPreference(userId: number, preference: Partial<UserPreference>): Promise<UserPreference>;
+  
+  // Strategy Recommendations operations
+  getRecommendations(userId: number): Promise<StrategyRecommendation[]>;
+  getRecommendation(id: number): Promise<StrategyRecommendation | undefined>;
+  saveRecommendation(recommendation: InsertStrategyRecommendation): Promise<StrategyRecommendation>;
+  markRecommendationFavorite(id: number, favorite: boolean): Promise<StrategyRecommendation>;
+  markRecommendationApplied(id: number, applied: boolean): Promise<StrategyRecommendation>;
+  deleteRecommendation(id: number): Promise<boolean>;
   
   // Backtest operations
   getBacktests(strategyId: number): Promise<Backtest[]>;
@@ -92,6 +122,106 @@ export interface IStorage {
   // Strategy Correlation
   getStrategyCorrelations(userId: number): Promise<StrategyCorrelation[]>;
   updateStrategyCorrelations(userId: number, correlations: InsertStrategyCorrelation[]): Promise<StrategyCorrelation[]>;
+  
+  // Strategy Recommendations
+  getRecommendations(userId: number): Promise<StrategyRecommendation[]>;
+  getRecommendation(id: number): Promise<StrategyRecommendation | undefined>;
+  saveRecommendation(recommendation: InsertStrategyRecommendation): Promise<StrategyRecommendation>;
+  updateRecommendation(id: number, updates: Partial<StrategyRecommendation>): Promise<StrategyRecommendation>;
+  markRecommendationFavorite(id: number, favorite: boolean): Promise<StrategyRecommendation>;
+  markRecommendationApplied(id: number, applied: boolean): Promise<StrategyRecommendation>;
+  deleteRecommendation(id: number): Promise<boolean>;
+
+  // User Preferences
+  getUserPreference(userId: number): Promise<UserPreference | undefined>;
+  saveUserPreference(preference: InsertUserPreference): Promise<UserPreference>;
+  updateUserPreference(id: number, preference: Partial<UserPreference>): Promise<UserPreference>;
+  
+  // Learning Module operations
+  getLearningModules(): Promise<LearningModule[]>;
+  getLearningModule(id: number): Promise<LearningModule | undefined>;
+  createLearningModule(module: InsertLearningModule): Promise<LearningModule>;
+  updateLearningModule(id: number, module: Partial<LearningModule>): Promise<LearningModule>;
+  deleteLearningModule(id: number): Promise<boolean>;
+  
+  // Lesson operations
+  getLessons(moduleId: number): Promise<Lesson[]>;
+  getLesson(id: number): Promise<Lesson | undefined>;
+  createLesson(lesson: InsertLesson): Promise<Lesson>;
+  updateLesson(id: number, lesson: Partial<Lesson>): Promise<Lesson>;
+  deleteLesson(id: number): Promise<boolean>;
+  
+  // Quiz operations
+  getQuizzes(lessonId: number): Promise<Quiz[]>;
+  getQuiz(id: number): Promise<Quiz | undefined>;
+  createQuiz(quiz: InsertQuiz): Promise<Quiz>;
+  updateQuiz(id: number, quiz: Partial<Quiz>): Promise<Quiz>;
+  deleteQuiz(id: number): Promise<boolean>;
+  
+  // Quiz Question operations
+  getQuizQuestions(quizId: number): Promise<QuizQuestion[]>;
+  getQuizQuestion(id: number): Promise<QuizQuestion | undefined>;
+  createQuizQuestion(question: InsertQuizQuestion): Promise<QuizQuestion>;
+  updateQuizQuestion(id: number, question: Partial<QuizQuestion>): Promise<QuizQuestion>;
+  deleteQuizQuestion(id: number): Promise<boolean>;
+  
+  // Quiz Answer operations
+  getQuizAnswers(questionId: number): Promise<QuizAnswer[]>;
+  createQuizAnswer(answer: InsertQuizAnswer): Promise<QuizAnswer>;
+  updateQuizAnswer(id: number, answer: Partial<QuizAnswer>): Promise<QuizAnswer>;
+  deleteQuizAnswer(id: number): Promise<boolean>;
+  
+  // User Progress operations
+  getUserProgress(userId: number): Promise<UserProgress[]>;
+  trackUserProgress(progress: InsertUserProgress): Promise<UserProgress>;
+  updateUserProgress(id: number, progress: Partial<UserProgress>): Promise<UserProgress>;
+  
+  // Badge operations
+  getBadges(): Promise<Badge[]>;
+  getBadge(id: number): Promise<Badge | undefined>;
+  createBadge(badge: InsertBadge): Promise<Badge>;
+  updateBadge(id: number, badge: Partial<Badge>): Promise<Badge>;
+  deleteBadge(id: number): Promise<boolean>;
+  
+  // User Badge operations
+  getUserBadges(userId: number): Promise<UserBadge[]>;
+  awardBadge(userId: number, badgeId: number): Promise<UserBadge>;
+  
+  // Trading Workflow Automation operations
+  
+  // Trading Workflows
+  getTradingWorkflows(userId: number): Promise<TradingWorkflow[]>;
+  getTradingWorkflow(id: number): Promise<TradingWorkflow | undefined>;
+  createTradingWorkflow(workflow: InsertTradingWorkflow): Promise<TradingWorkflow>;
+  updateTradingWorkflow(id: number, workflow: Partial<TradingWorkflow>): Promise<TradingWorkflow>;
+  deleteTradingWorkflow(id: number): Promise<boolean>;
+  updateWorkflowStatus(id: number, status: string): Promise<TradingWorkflow>;
+  
+  // Workflow Steps
+  getWorkflowSteps(workflowId: number): Promise<WorkflowStep[]>;
+  getWorkflowStep(id: number): Promise<WorkflowStep | undefined>;
+  createWorkflowStep(step: InsertWorkflowStep): Promise<WorkflowStep>;
+  updateWorkflowStep(id: number, step: Partial<WorkflowStep>): Promise<WorkflowStep>;
+  deleteWorkflowStep(id: number): Promise<boolean>;
+  
+  // Workflow Conditions
+  getWorkflowConditions(workflowId: number): Promise<WorkflowCondition[]>;
+  getWorkflowCondition(id: number): Promise<WorkflowCondition | undefined>;
+  createWorkflowCondition(condition: InsertWorkflowCondition): Promise<WorkflowCondition>;
+  updateWorkflowCondition(id: number, condition: Partial<WorkflowCondition>): Promise<WorkflowCondition>;
+  deleteWorkflowCondition(id: number): Promise<boolean>;
+  
+  // Workflow Actions
+  getWorkflowActions(workflowId: number): Promise<WorkflowAction[]>;
+  getWorkflowAction(id: number): Promise<WorkflowAction | undefined>;
+  createWorkflowAction(action: InsertWorkflowAction): Promise<WorkflowAction>;
+  updateWorkflowAction(id: number, action: Partial<WorkflowAction>): Promise<WorkflowAction>;
+  deleteWorkflowAction(id: number): Promise<boolean>;
+  
+  // Workflow Execution Logs
+  getWorkflowExecutionLogs(workflowId: number): Promise<WorkflowExecutionLog[]>;
+  createWorkflowExecutionLog(log: InsertWorkflowExecutionLog): Promise<WorkflowExecutionLog>;
+  updateWorkflowExecutionLog(id: number, log: Partial<WorkflowExecutionLog>): Promise<WorkflowExecutionLog>;
 }
 
 // In-memory storage implementation
@@ -112,6 +242,27 @@ export class MemStorage implements IStorage {
   private sectorExposures: Map<string, SectorExposure>;
   private strategyCorrelations: Map<number, StrategyCorrelation>;
   
+  // User preferences & recommendations
+  private userPreferences: Map<number, UserPreference>;
+  private strategyRecommendations: Map<number, StrategyRecommendation>;
+  
+  // Learning module data structures
+  private learningModules: Map<number, LearningModule>;
+  private lessons: Map<number, Lesson>;
+  private quizzes: Map<number, Quiz>;
+  private quizQuestions: Map<number, QuizQuestion>;
+  private quizAnswers: Map<number, QuizAnswer>;
+  private userProgress: Map<number, UserProgress>;
+  private badges: Map<number, Badge>;
+  private userBadges: Map<number, UserBadge>;
+  
+  // Trading Workflow Automation data structures
+  private tradingWorkflows: Map<number, TradingWorkflow>;
+  private workflowSteps: Map<number, WorkflowStep>;
+  private workflowConditions: Map<number, WorkflowCondition>;
+  private workflowActions: Map<number, WorkflowAction>;
+  private workflowExecutionLogs: Map<number, WorkflowExecutionLog>;
+  
   private userId = 1;
   private strategyId = 1;
   private backtestId = 1;
@@ -125,6 +276,25 @@ export class MemStorage implements IStorage {
   private sectorExposureId = 1;
   private portfolioRiskId = 1;
   private strategyCorrelationId = 1;
+  private userPreferenceId = 1;
+  private recommendationId = 1;
+  
+  // Learning module IDs
+  private learningModuleId = 1;
+  private lessonId = 1;
+  private quizId = 1;
+  private quizQuestionId = 1;
+  private quizAnswerId = 1;
+  private userProgressId = 1;
+  private badgeId = 1;
+  private userBadgeId = 1;
+  
+  // Trading Workflow Automation IDs
+  private tradingWorkflowId = 1;
+  private workflowStepId = 1;
+  private workflowConditionId = 1;
+  private workflowActionId = 1;
+  private workflowExecutionLogId = 1;
   
   constructor() {
     this.users = new Map();
@@ -142,19 +312,220 @@ export class MemStorage implements IStorage {
     this.marketExposures = new Map();
     this.sectorExposures = new Map();
     this.strategyCorrelations = new Map();
+
+    // Initialize user preferences & recommendations
+    this.userPreferences = new Map();
+    this.strategyRecommendations = new Map();
+
+    // Initialize learning module data structures
+    this.learningModules = new Map();
+    this.lessons = new Map();
+    this.quizzes = new Map();
+    this.quizQuestions = new Map();
+    this.quizAnswers = new Map();
+    this.userProgress = new Map();
+    this.badges = new Map();
+    this.userBadges = new Map();
+
+    // Initialize Trading Workflow Automation data structures
+    this.tradingWorkflows = new Map();
+    this.workflowSteps = new Map();
+    this.workflowConditions = new Map();
+    this.workflowActions = new Map();
+    this.workflowExecutionLogs = new Map();
     
     // Add sample data for development
     this.initializeSampleData();
   }
   
+  private initializeSampleWorkflows(userId: number) {
+    // Workflow 1: Simple Moving Average Crossover
+    const workflow1: TradingWorkflow = {
+      id: this.tradingWorkflowId++,
+      userId: userId,
+      name: "SMA Crossover Strategy",
+      description: "Buy when 50-day SMA crosses above 200-day SMA, sell when it crosses below",
+      status: "active",
+      isAutomatic: true,
+      priority: 1,
+      schedule: "0 9 * * 1-5", // Every weekday at 9 AM
+      executionCount: 5,
+      lastExecutedAt: new Date(Date.now() - 86400000), // 1 day ago
+      createdAt: new Date(Date.now() - 86400000 * 7), // 7 days ago
+      updatedAt: new Date(Date.now() - 86400000)
+    };
+    this.tradingWorkflows.set(workflow1.id, workflow1);
+    
+    // Workflow 2: RSI Oversold Strategy
+    const workflow2: TradingWorkflow = {
+      id: this.tradingWorkflowId++,
+      userId: userId,
+      name: "RSI Oversold Strategy",
+      description: "Buy when RSI drops below 30, sell when it rises above 70",
+      status: "paused",
+      isAutomatic: true,
+      priority: 2,
+      schedule: "0 10 * * 1-5", // Every weekday at 10 AM
+      executionCount: 3,
+      lastExecutedAt: new Date(Date.now() - 86400000 * 3), // 3 days ago
+      createdAt: new Date(Date.now() - 86400000 * 14), // 14 days ago
+      updatedAt: new Date(Date.now() - 86400000 * 3) // 3 days ago
+    };
+    this.tradingWorkflows.set(workflow2.id, workflow2);
+    
+    // Workflow 3: Manual Market Open Strategy
+    const workflow3: TradingWorkflow = {
+      id: this.tradingWorkflowId++,
+      userId: userId,
+      name: "Market Open Gap Trading",
+      description: "Manual strategy for trading gaps at market open",
+      status: "active",
+      isAutomatic: false,
+      priority: 3,
+      schedule: null,
+      executionCount: 8,
+      lastExecutedAt: new Date(Date.now() - 86400000 * 1), // 1 day ago
+      createdAt: new Date(Date.now() - 86400000 * 21), // 21 days ago
+      updatedAt: new Date(Date.now() - 86400000 * 1) // 1 day ago
+    };
+    this.tradingWorkflows.set(workflow3.id, workflow3);
+    
+    // Add workflow steps for SMA Crossover workflow
+    // Step 1: Market check
+    const step1: WorkflowStep = {
+      id: this.workflowStepId++,
+      workflowId: workflow1.id,
+      name: "Check Market Status",
+      stepType: "market_check",
+      stepOrder: 1,
+      isEnabled: true,
+      config: { markets: ["NSE"] },
+      description: "Verify that markets are open",
+      maxRetries: 3,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.workflowSteps.set(step1.id, step1);
+    
+    // Step 2: Calculate SMA values
+    const step2: WorkflowStep = {
+      id: this.workflowStepId++,
+      workflowId: workflow1.id,
+      name: "Calculate SMAs",
+      stepType: "technical_indicator",
+      stepOrder: 2,
+      isEnabled: true,
+      config: { 
+        symbols: ["NSE:RELIANCE", "NSE:INFY", "NSE:HDFCBANK"],
+        indicators: [
+          { type: "sma", params: { period: 50 } },
+          { type: "sma", params: { period: 200 } }
+        ]
+      },
+      description: "Calculate 50-day and 200-day SMAs",
+      maxRetries: 2,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.workflowSteps.set(step2.id, step2);
+    
+    // Step 3: Check for crossovers
+    const step3: WorkflowStep = {
+      id: this.workflowStepId++,
+      workflowId: workflow1.id,
+      name: "Check for Crossovers",
+      stepType: "signal_detection",
+      stepOrder: 3,
+      isEnabled: true,
+      config: { 
+        signalType: "crossover",
+        line1: "sma_50",
+        line2: "sma_200"
+      },
+      description: "Detect SMA crossover signals",
+      maxRetries: 1,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.workflowSteps.set(step3.id, step3);
+    
+    // Step 4: Generate orders
+    const step4: WorkflowStep = {
+      id: this.workflowStepId++,
+      workflowId: workflow1.id,
+      name: "Generate Orders",
+      stepType: "order_generation",
+      stepOrder: 4,
+      isEnabled: true,
+      config: { 
+        orderType: "market",
+        positionSize: "fixed",
+        sizeValue: 5000,
+        stopLoss: 2,
+        takeProfit: 5
+      },
+      description: "Create orders based on crossover signals",
+      maxRetries: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.workflowSteps.set(step4.id, step4);
+    
+    // Create workflow conditions
+    const condition1: WorkflowCondition = {
+      id: this.workflowConditionId++,
+      workflowId: workflow1.id,
+      name: "Market Hours Check",
+      conditionType: "time_window",
+      parameters: { 
+        startTime: "09:15:00", 
+        endTime: "15:30:00", 
+        timezone: "Asia/Kolkata" 
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.workflowConditions.set(condition1.id, condition1);
+    
+    // Create workflow actions
+    const action1: WorkflowAction = {
+      id: this.workflowActionId++,
+      workflowId: workflow1.id,
+      name: "Send SMS Alert",
+      actionType: "notification",
+      parameters: { 
+        medium: "sms",
+        template: "SMA_CROSSOVER_ALERT" 
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.workflowActions.set(action1.id, action1);
+    
+    // Add execution logs
+    const log1: WorkflowExecutionLog = {
+      id: this.workflowExecutionLogId++,
+      workflowId: workflow1.id,
+      status: "success",
+      triggeredBy: "schedule",
+      executionStartTime: new Date(Date.now() - 86400000 - 3600000), // 1 day and 1 hour ago
+      executionEndTime: new Date(Date.now() - 86400000 - 3590000),  // 1 day and 59 minutes and 50 seconds ago
+      summary: "Successfully executed all steps",
+      details: { steps_completed: 4, signals_generated: 1 },
+      createdAt: new Date(Date.now() - 86400000 - 3590000)
+    };
+    this.workflowExecutionLogs.set(log1.id, log1);
+  }
+  
   private initializeSampleData() {
-    // Sample user
+    // Test user with simple credentials for development
+    console.log("Initializing test user and learning modules");
     const user: User = {
       id: this.userId++,
-      username: "demo",
-      password: "$2a$10$demopasswordhash",
-      email: "demo@example.com",
-      fullName: "Demo User",
+      username: "test",
+      password: "$2a$10$2QlYCcbUyKNKE6JDQ14wieNuZdKc0E6I4OsHmMtF27b2P7fMnHpqi", // "testpassword"
+      email: "test@example.com",
+      fullName: "Test User",
       createdAt: new Date(),
       stripeCustomerId: null,
       stripeSubscriptionId: null,
@@ -493,6 +864,514 @@ class RSIDivergenceStrategy:
       updatedAt: new Date()
     };
     this.strategyCorrelations.set(strategyCorrelation.id, strategyCorrelation);
+    
+    // Sample user preference
+    const userPreference: UserPreference = {
+      id: this.userPreferenceId++,
+      userId: user.id,
+      riskTolerance: "moderate",
+      tradingFrequency: "daily",
+      preferredMarkets: JSON.stringify(["Equities", "Forex"]),
+      preferredTimeframes: JSON.stringify(["1h", "4h", "1d"]),
+      tradingStyle: "swing",
+      preferredIndicators: JSON.stringify(["Moving Averages", "RSI", "MACD"]),
+      automationLevel: "semi",
+      capitalAvailable: "25000",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.userPreferences.set(userPreference.id, userPreference);
+    
+    // Sample strategy recommendations
+    const recommendation1: StrategyRecommendation = {
+      id: this.recommendationId++,
+      userId: user.id,
+      title: "Momentum Scalping Strategy",
+      description: "Short-term momentum trading strategy for intraday opportunities.",
+      strategyType: "momentum",
+      assetClass: "Equities",
+      matchScore: 87.5,
+      expectedReturns: "15-20%",
+      riskLevel: "moderate",
+      timeframe: "5m",
+      suitableMarkets: JSON.stringify(["NSE", "BSE"]),
+      favorite: false,
+      applied: false,
+      createdAt: new Date()
+    };
+    this.strategyRecommendations.set(recommendation1.id, recommendation1);
+    
+    const recommendation2: StrategyRecommendation = {
+      id: this.recommendationId++,
+      userId: user.id,
+      title: "Mean Reversion ETF Strategy",
+      description: "Leverages statistical mean reversion for ETF trading.",
+      strategyType: "mean-reversion",
+      assetClass: "ETF",
+      matchScore: 92.3,
+      expectedReturns: "12-15%",
+      riskLevel: "low",
+      timeframe: "1d",
+      suitableMarkets: JSON.stringify(["NSE", "NYSE"]),
+      favorite: true,
+      applied: false,
+      createdAt: new Date()
+    };
+    this.strategyRecommendations.set(recommendation2.id, recommendation2);
+    
+    // Sample learning modules
+    
+    // Module 1: Introduction to Technical Analysis
+    const module1: LearningModule = {
+      id: this.learningModuleId++,
+      title: "Introduction to Technical Analysis",
+      description: "Learn the basics of technical analysis and chart patterns for trading",
+      imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80",
+      level: "beginner",
+      order: 1,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.learningModules.set(module1.id, module1);
+    
+    // Lessons for Module 1
+    const lesson1: Lesson = {
+      id: this.lessonId++,
+      moduleId: module1.id,
+      title: "What is Technical Analysis?",
+      description: "Understanding the basics of technical analysis in trading",
+      content: `
+# What is Technical Analysis?
+
+Technical analysis is a method of evaluating securities by analyzing statistics generated by market activity. 
+Technical analysts use charts and other tools to identify patterns that can suggest future market behavior.
+
+## Key Principles
+
+1. **Price Discounts Everything**: All known information is already reflected in the price
+2. **Prices Move in Trends**: Prices are more likely to continue a past trend than move randomly
+3. **History Tends to Repeat Itself**: Market psychology causes patterns to repeat
+
+## Common Technical Tools
+
+- Price charts (candlestick, bar, line)
+- Trend lines
+- Support and resistance levels
+- Moving averages
+- Momentum indicators (RSI, MACD)
+
+Technical analysis can be applied to any security with historical trading data, including stocks, forex, commodities, and cryptocurrencies.
+      `,
+      order: 1,
+      points: 10,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.lessons.set(lesson1.id, lesson1);
+    
+    const lesson2: Lesson = {
+      id: this.lessonId++,
+      moduleId: module1.id,
+      title: "Chart Types and Patterns",
+      description: "Learn about different chart types and basic patterns",
+      content: `
+# Chart Types and Patterns
+
+Chart patterns are specific formations on price charts that can help traders predict future price movements.
+
+## Common Chart Types
+
+### Candlestick Charts
+Candlestick charts show the open, high, low, and close prices for each period. They're particularly useful for identifying short-term patterns.
+
+### Bar Charts
+Bar charts also display open, high, low, and close prices but in a different format than candlesticks.
+
+### Line Charts
+Line charts simply connect closing prices, providing a clean view of price movements.
+
+## Basic Chart Patterns
+
+### Trend Patterns
+- **Uptrend**: Series of higher highs and higher lows
+- **Downtrend**: Series of lower highs and lower lows
+- **Sideways/Ranging**: Price moves within a horizontal channel
+
+### Reversal Patterns
+- **Head and Shoulders**: Indicates a potential trend reversal from bullish to bearish
+- **Double Top/Bottom**: Indicates a potential trend reversal
+- **Triple Top/Bottom**: Similar to double patterns but with three peaks or troughs
+
+### Continuation Patterns
+- **Flags and Pennants**: Brief pauses in strong trends
+- **Triangles**: Consolidation patterns that can break in either direction
+- **Rectangles**: Trading ranges that eventually break out
+
+Understanding these patterns helps traders make informed decisions about market entry and exit points.
+      `,
+      order: 2,
+      points: 15,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.lessons.set(lesson2.id, lesson2);
+    
+    // Quiz for Lesson 1
+    const quiz1: Quiz = {
+      id: this.quizId++,
+      lessonId: lesson1.id,
+      title: "Technical Analysis Basics Quiz",
+      description: "Test your knowledge of technical analysis fundamentals",
+      passingScore: 70,
+      points: 20,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.quizzes.set(quiz1.id, quiz1);
+    
+    // Questions for Quiz 1
+    const question1: QuizQuestion = {
+      id: this.quizQuestionId++,
+      quizId: quiz1.id,
+      question: "Which of the following is NOT a key principle of technical analysis?",
+      explanation: "Technical analysis is based on the principles that price discounts everything, prices move in trends, and history tends to repeat itself. Fundamental value being irrelevant is not a principle of technical analysis - in fact, many technical analysts also consider fundamental factors.",
+      type: "multiple_choice",
+      order: 1,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.quizQuestions.set(question1.id, question1);
+    
+    // Answers for Question 1
+    const answer1_1: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question1.id,
+      answer: "Price discounts everything",
+      isCorrect: false,
+      order: 1
+    };
+    this.quizAnswers.set(answer1_1.id, answer1_1);
+    
+    const answer1_2: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question1.id,
+      answer: "Prices move in trends",
+      isCorrect: false,
+      order: 2
+    };
+    this.quizAnswers.set(answer1_2.id, answer1_2);
+    
+    const answer1_3: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question1.id,
+      answer: "History tends to repeat itself",
+      isCorrect: false,
+      order: 3
+    };
+    this.quizAnswers.set(answer1_3.id, answer1_3);
+    
+    const answer1_4: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question1.id,
+      answer: "Fundamental value is irrelevant",
+      isCorrect: true,
+      order: 4
+    };
+    this.quizAnswers.set(answer1_4.id, answer1_4);
+    
+    const question2: QuizQuestion = {
+      id: this.quizQuestionId++,
+      quizId: quiz1.id,
+      question: "Which chart type shows open, high, low, and close prices in a single visual element?",
+      explanation: "Candlestick charts display open, high, low, and close prices in a single candle-like formation, making them particularly useful for pattern recognition.",
+      type: "multiple_choice",
+      order: 2,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.quizQuestions.set(question2.id, question2);
+    
+    // Answers for Question 2
+    const answer2_1: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question2.id,
+      answer: "Line chart",
+      isCorrect: false,
+      order: 1
+    };
+    this.quizAnswers.set(answer2_1.id, answer2_1);
+    
+    const answer2_2: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question2.id,
+      answer: "Candlestick chart",
+      isCorrect: true,
+      order: 2
+    };
+    this.quizAnswers.set(answer2_2.id, answer2_2);
+    
+    const answer2_3: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question2.id,
+      answer: "Point and figure chart",
+      isCorrect: false,
+      order: 3
+    };
+    this.quizAnswers.set(answer2_3.id, answer2_3);
+    
+    const answer2_4: QuizAnswer = {
+      id: this.quizAnswerId++,
+      questionId: question2.id,
+      answer: "Scatter plot",
+      isCorrect: false,
+      order: 4
+    };
+    this.quizAnswers.set(answer2_4.id, answer2_4);
+    
+    // Module 2: Trading Strategies
+    const module2: LearningModule = {
+      id: this.learningModuleId++,
+      title: "Trading Strategies",
+      description: "Learn about different trading strategies and how to implement them",
+      imageUrl: "https://images.unsplash.com/photo-1535320903710-d993d3d77d29?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80",
+      level: "intermediate",
+      order: 2,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.learningModules.set(module2.id, module2);
+    
+    // Sample user progress
+    const userProgress1: UserProgress = {
+      id: this.userProgressId++,
+      userId: user.id,
+      moduleId: module1.id,
+      lessonId: lesson1.id,
+      quizId: null,
+      completed: true,
+      score: null,
+      earnedPoints: 10,
+      completedAt: new Date(Date.now() - 86400000 * 2), // 2 days ago
+      createdAt: new Date(Date.now() - 86400000 * 3), // 3 days ago
+      updatedAt: new Date(Date.now() - 86400000 * 2) // 2 days ago
+    };
+    this.userProgress.set(userProgress1.id, userProgress1);
+    
+    const userProgress2: UserProgress = {
+      id: this.userProgressId++,
+      userId: user.id,
+      moduleId: module1.id,
+      lessonId: lesson2.id,
+      quizId: null,
+      completed: false,
+      score: null,
+      earnedPoints: 0,
+      completedAt: null,
+      createdAt: new Date(Date.now() - 86400000 * 1), // 1 day ago
+      updatedAt: new Date(Date.now() - 86400000 * 1) // 1 day ago
+    };
+    this.userProgress.set(userProgress2.id, userProgress2);
+    
+    // Sample badges
+    const badge1: Badge = {
+      id: this.badgeId++,
+      name: "Technical Analyst Novice",
+      description: "Completed the Introduction to Technical Analysis module",
+      imageUrl: "https://img.icons8.com/fluency/96/medal.png",
+      requirement: "Complete all lessons in the Introduction to Technical Analysis module",
+      points: 50,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.badges.set(badge1.id, badge1);
+    
+    const badge2: Badge = {
+      id: this.badgeId++,
+      name: "Chart Master",
+      description: "Scored 100% on the Chart Types and Patterns quiz",
+      imageUrl: "https://img.icons8.com/fluency/96/prize.png",
+      requirement: "Score 100% on the Chart Types and Patterns quiz",
+      points: 75,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.badges.set(badge2.id, badge2);
+    
+    // Sample trading workflows
+    console.log("Initializing sample trading workflows");
+    
+    // Workflow 1: Simple Moving Average Crossover
+    const workflow1: TradingWorkflow = {
+      id: this.tradingWorkflowId++,
+      userId: 1, // Test user
+      name: "SMA Crossover Strategy",
+      description: "Buy when 50-day SMA crosses above 200-day SMA, sell when it crosses below",
+      status: "active",
+      isAutomatic: true,
+      priority: 1,
+      schedule: "0 9 * * 1-5", // Every weekday at 9 AM
+      executionCount: 5,
+      lastExecutedAt: new Date(Date.now() - 86400000), // 1 day ago
+      createdAt: new Date(Date.now() - 86400000 * 7), // 7 days ago
+      updatedAt: new Date(Date.now() - 86400000),
+      logHistory: [
+        {
+          id: 1,
+          status: "success",
+          executedAt: new Date(Date.now() - 86400000),
+          message: "Buy signal triggered for NSE:RELIANCE"
+        },
+        {
+          id: 2,
+          status: "success",
+          executedAt: new Date(Date.now() - 86400000 * 2),
+          message: "No signals detected"
+        }
+      ]
+    };
+    this.tradingWorkflows.set(workflow1.id, workflow1);
+    
+    // Workflow 2: RSI Oversold Strategy
+    const workflow2: TradingWorkflow = {
+      id: this.tradingWorkflowId++,
+      userId: 1, // Test user
+      name: "RSI Oversold Alert",
+      description: "Alert when RSI goes below 30 (oversold condition)",
+      status: "inactive",
+      isAutomatic: false,
+      priority: 2,
+      schedule: null,
+      executionCount: 0,
+      lastExecutedAt: null,
+      createdAt: new Date(Date.now() - 86400000 * 3), // 3 days ago
+      updatedAt: new Date(Date.now() - 86400000 * 3),
+      logHistory: []
+    };
+    this.tradingWorkflows.set(workflow2.id, workflow2);
+    
+    // Sample workflow steps
+    const step1: WorkflowStep = {
+      id: this.workflowStepId++,
+      workflowId: workflow1.id,
+      stepType: "condition",
+      stepOrder: 1,
+      name: "Check SMA Crossover",
+      description: "Verify if 50-day SMA crossed above 200-day SMA",
+      config: {
+        indicatorType: "sma",
+        fastPeriod: 50,
+        slowPeriod: 200,
+        action: "crossover"
+      },
+      createdAt: new Date(Date.now() - 86400000 * 7),
+      updatedAt: new Date(Date.now() - 86400000 * 7)
+    };
+    this.workflowSteps.set(step1.id, step1);
+    
+    const step2: WorkflowStep = {
+      id: this.workflowStepId++,
+      workflowId: workflow1.id,
+      stepType: "action",
+      stepOrder: 2,
+      name: "Execute Buy Order",
+      description: "Place a market buy order when conditions are met",
+      config: {
+        orderType: "market",
+        side: "buy",
+        quantity: "10% of portfolio",
+        notificationType: "email"
+      },
+      createdAt: new Date(Date.now() - 86400000 * 7),
+      updatedAt: new Date(Date.now() - 86400000 * 7)
+    };
+    this.workflowSteps.set(step2.id, step2);
+    
+    // Sample workflow conditions
+    const condition1: WorkflowCondition = {
+      id: this.workflowConditionId++,
+      workflowId: workflow1.id,
+      conditionType: "indicator",
+      symbol: "NSE:RELIANCE",
+      operator: "crosses_above",
+      value: "sma_200",
+      timeframe: "1d",
+      lookbackPeriod: 5,
+      isEnabled: true,
+      lastEvaluated: new Date(Date.now() - 86400000),
+      lastResult: true,
+      createdAt: new Date(Date.now() - 86400000 * 7),
+      updatedAt: new Date(Date.now() - 86400000)
+    };
+    this.workflowConditions.set(condition1.id, condition1);
+    
+    const condition2: WorkflowCondition = {
+      id: this.workflowConditionId++,
+      workflowId: workflow2.id,
+      conditionType: "indicator",
+      symbol: "NSE:NIFTYBEES",
+      operator: "<",
+      value: "30",
+      timeframe: "4h",
+      lookbackPeriod: 1,
+      isEnabled: true,
+      lastEvaluated: null,
+      lastResult: null,
+      createdAt: new Date(Date.now() - 86400000 * 3),
+      updatedAt: new Date(Date.now() - 86400000 * 3)
+    };
+    this.workflowConditions.set(condition2.id, condition2);
+    
+    // Sample workflow actions
+    const action1: WorkflowAction = {
+      id: this.workflowActionId++,
+      workflowId: workflow1.id,
+      stepId: step2.id,
+      actionType: "buy",
+      symbol: "NSE:RELIANCE",
+      quantity: "10",
+      price: "market",
+      orderType: "market",
+      isEnabled: true,
+      lastExecuted: new Date(Date.now() - 86400000),
+      status: "success",
+      createdAt: new Date(Date.now() - 86400000 * 7),
+      updatedAt: new Date(Date.now() - 86400000)
+    };
+    this.workflowActions.set(action1.id, action1);
+    
+    const action2: WorkflowAction = {
+      id: this.workflowActionId++,
+      workflowId: workflow2.id,
+      stepId: 0, // No associated step
+      actionType: "alert",
+      symbol: "NSE:NIFTYBEES",
+      quantity: null,
+      price: null,
+      orderType: null,
+      isEnabled: true,
+      lastExecuted: null,
+      status: "pending",
+      createdAt: new Date(Date.now() - 86400000 * 3),
+      updatedAt: new Date(Date.now() - 86400000 * 3)
+    };
+    this.workflowActions.set(action2.id, action2);
+    
+    // Sample workflow execution logs
+    const log1: WorkflowExecutionLog = {
+      id: this.workflowExecutionLogId++,
+      workflowId: workflow1.id,
+      executedAt: new Date(Date.now() - 86400000),
+      status: "success",
+      message: "Buy signal triggered for NSE:RELIANCE",
+      details: {
+        conditionsSatisfied: [condition1.id],
+        actionsExecuted: [action1.id],
+        orderIds: ["mock-order-12345"]
+      },
+      createdAt: new Date(Date.now() - 86400000),
+      updatedAt: new Date(Date.now() - 86400000)
+    };
+    this.workflowExecutionLogs.set(log1.id, log1);
   }
   
   // User operations
@@ -1038,6 +1917,244 @@ class RSIDivergenceStrategy:
     
     return updatedCorrelations;
   }
+  
+  // Trading Workflow methods
+  async getTradingWorkflows(userId: number): Promise<TradingWorkflow[]> {
+    const workflows = Array.from(this.tradingWorkflows.values())
+      .filter(workflow => workflow.userId === userId);
+    
+    // Sort by createdAt date (newest first)
+    workflows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return workflows;
+  }
+  
+  async getTradingWorkflow(id: number): Promise<TradingWorkflow | undefined> {
+    return this.tradingWorkflows.get(id);
+  }
+  
+  async createTradingWorkflow(workflow: InsertTradingWorkflow): Promise<TradingWorkflow> {
+    const id = this.tradingWorkflowId++;
+    const now = new Date();
+    
+    const newWorkflow: TradingWorkflow = {
+      ...workflow,
+      id,
+      executionCount: 0,
+      lastExecutedAt: null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.tradingWorkflows.set(id, newWorkflow);
+    return newWorkflow;
+  }
+  
+  async updateTradingWorkflow(id: number, data: Partial<TradingWorkflow>): Promise<TradingWorkflow> {
+    const workflow = this.tradingWorkflows.get(id);
+    if (!workflow) {
+      throw new Error(`Workflow with id ${id} not found`);
+    }
+    
+    const updatedWorkflow: TradingWorkflow = {
+      ...workflow,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    this.tradingWorkflows.set(id, updatedWorkflow);
+    return updatedWorkflow;
+  }
+  
+  async updateWorkflowStatus(id: number, status: string): Promise<TradingWorkflow> {
+    return this.updateTradingWorkflow(id, { status });
+  }
+  
+  async deleteTradingWorkflow(id: number): Promise<boolean> {
+    return this.tradingWorkflows.delete(id);
+  }
+  
+  // Workflow Steps
+  async getWorkflowSteps(workflowId: number): Promise<WorkflowStep[]> {
+    const steps = Array.from(this.workflowSteps.values())
+      .filter(step => step.workflowId === workflowId);
+    
+    // Sort by order
+    steps.sort((a, b) => a.order - b.order);
+    
+    return steps;
+  }
+  
+  async getWorkflowStep(id: number): Promise<WorkflowStep | undefined> {
+    return this.workflowSteps.get(id);
+  }
+  
+  async createWorkflowStep(step: InsertWorkflowStep): Promise<WorkflowStep> {
+    const id = this.workflowStepId++;
+    const now = new Date();
+    
+    const newStep: WorkflowStep = {
+      ...step,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowSteps.set(id, newStep);
+    return newStep;
+  }
+  
+  async updateWorkflowStep(id: number, data: Partial<WorkflowStep>): Promise<WorkflowStep> {
+    const step = this.workflowSteps.get(id);
+    if (!step) {
+      throw new Error(`Workflow step with id ${id} not found`);
+    }
+    
+    const updatedStep: WorkflowStep = {
+      ...step,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    this.workflowSteps.set(id, updatedStep);
+    return updatedStep;
+  }
+  
+  async deleteWorkflowStep(id: number): Promise<boolean> {
+    return this.workflowSteps.delete(id);
+  }
+  
+  // Workflow Conditions
+  async getWorkflowConditions(workflowId: number): Promise<WorkflowCondition[]> {
+    return Array.from(this.workflowConditions.values())
+      .filter(condition => condition.workflowId === workflowId);
+  }
+  
+  async getWorkflowCondition(id: number): Promise<WorkflowCondition | undefined> {
+    return this.workflowConditions.get(id);
+  }
+  
+  async createWorkflowCondition(condition: InsertWorkflowCondition): Promise<WorkflowCondition> {
+    const id = this.workflowConditionId++;
+    const now = new Date();
+    
+    const newCondition: WorkflowCondition = {
+      ...condition,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowConditions.set(id, newCondition);
+    return newCondition;
+  }
+  
+  async updateWorkflowCondition(id: number, data: Partial<WorkflowCondition>): Promise<WorkflowCondition> {
+    const condition = this.workflowConditions.get(id);
+    if (!condition) {
+      throw new Error(`Workflow condition with id ${id} not found`);
+    }
+    
+    const updatedCondition: WorkflowCondition = {
+      ...condition,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    this.workflowConditions.set(id, updatedCondition);
+    return updatedCondition;
+  }
+  
+  async deleteWorkflowCondition(id: number): Promise<boolean> {
+    return this.workflowConditions.delete(id);
+  }
+  
+  // Workflow Actions
+  async getWorkflowActions(workflowId: number): Promise<WorkflowAction[]> {
+    return Array.from(this.workflowActions.values())
+      .filter(action => action.workflowId === workflowId);
+  }
+  
+  async getWorkflowAction(id: number): Promise<WorkflowAction | undefined> {
+    return this.workflowActions.get(id);
+  }
+  
+  async createWorkflowAction(action: InsertWorkflowAction): Promise<WorkflowAction> {
+    const id = this.workflowActionId++;
+    const now = new Date();
+    
+    const newAction: WorkflowAction = {
+      ...action,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowActions.set(id, newAction);
+    return newAction;
+  }
+  
+  async updateWorkflowAction(id: number, data: Partial<WorkflowAction>): Promise<WorkflowAction> {
+    const action = this.workflowActions.get(id);
+    if (!action) {
+      throw new Error(`Workflow action with id ${id} not found`);
+    }
+    
+    const updatedAction: WorkflowAction = {
+      ...action,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    this.workflowActions.set(id, updatedAction);
+    return updatedAction;
+  }
+  
+  async deleteWorkflowAction(id: number): Promise<boolean> {
+    return this.workflowActions.delete(id);
+  }
+  
+  // Workflow Execution Logs
+  async getWorkflowExecutionLogs(workflowId: number, limit: number = 10): Promise<WorkflowExecutionLog[]> {
+    const logs = Array.from(this.workflowExecutionLogs.values())
+      .filter(log => log.workflowId === workflowId);
+    
+    // Sort by createdAt date (newest first)
+    logs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return logs.slice(0, limit);
+  }
+  
+  async createWorkflowExecutionLog(log: InsertWorkflowExecutionLog): Promise<WorkflowExecutionLog> {
+    const id = this.workflowExecutionLogId++;
+    const now = new Date();
+    
+    const newLog: WorkflowExecutionLog = {
+      ...log,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowExecutionLogs.set(id, newLog);
+    return newLog;
+  }
+  
+  async updateWorkflowExecutionLog(id: number, data: Partial<WorkflowExecutionLog>): Promise<WorkflowExecutionLog> {
+    const log = this.workflowExecutionLogs.get(id);
+    if (!log) {
+      throw new Error(`Workflow execution log with id ${id} not found`);
+    }
+    
+    const updatedLog: WorkflowExecutionLog = {
+      ...log,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    this.workflowExecutionLogs.set(id, updatedLog);
+    return updatedLog;
+  }
 }
 
 import { db } from "./db";
@@ -1503,6 +2620,670 @@ export class DatabaseStorage implements IStorage {
       
     return newCorrelations;
   }
+  
+  // User Preferences operations
+  async getUserPreference(userId: number): Promise<UserPreference | undefined> {
+    return Array.from(this.userPreferences.values()).find(pref => pref.userId === userId);
+  }
+  
+  async saveUserPreference(preference: InsertUserPreference): Promise<UserPreference> {
+    // Check if preference already exists for this user
+    const existingPref = await this.getUserPreference(preference.userId);
+    
+    if (existingPref) {
+      // Update existing preference
+      return this.updateUserPreference(preference.userId, preference);
+    }
+    
+    // Create new preference
+    const id = this.userPreferenceId++;
+    const newPreference: UserPreference = {
+      ...preference,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.userPreferences.set(id, newPreference);
+    return newPreference;
+  }
+  
+  async updateUserPreference(userId: number, preference: Partial<UserPreference>): Promise<UserPreference> {
+    const existingPref = await this.getUserPreference(userId);
+    
+    if (!existingPref) {
+      throw new Error(`User preference for user ${userId} not found`);
+    }
+    
+    const updatedPreference: UserPreference = {
+      ...existingPref,
+      ...preference,
+      updatedAt: new Date()
+    };
+    
+    this.userPreferences.set(existingPref.id, updatedPreference);
+    return updatedPreference;
+  }
+  
+  // Strategy Recommendations operations
+  async getRecommendations(userId: number): Promise<StrategyRecommendation[]> {
+    return Array.from(this.strategyRecommendations.values())
+      .filter(rec => rec.userId === userId)
+      .sort((a, b) => b.matchScore - a.matchScore); // Sort by match score descending
+  }
+  
+  async getRecommendation(id: number): Promise<StrategyRecommendation | undefined> {
+    return this.strategyRecommendations.get(id);
+  }
+  
+  async saveRecommendation(recommendation: InsertStrategyRecommendation): Promise<StrategyRecommendation> {
+    const id = this.recommendationId++;
+    const newRecommendation: StrategyRecommendation = {
+      ...recommendation,
+      id,
+      createdAt: new Date()
+    };
+    
+    this.strategyRecommendations.set(id, newRecommendation);
+    return newRecommendation;
+  }
+  
+  async updateRecommendation(id: number, updates: Partial<StrategyRecommendation>): Promise<StrategyRecommendation> {
+    const recommendation = this.strategyRecommendations.get(id);
+    
+    if (!recommendation) {
+      throw new Error(`Recommendation with id ${id} not found`);
+    }
+    
+    const updatedRecommendation: StrategyRecommendation = {
+      ...recommendation,
+      ...updates
+    };
+    
+    this.strategyRecommendations.set(id, updatedRecommendation);
+    return updatedRecommendation;
+  }
+  
+  async deleteRecommendation(id: number): Promise<boolean> {
+    return this.strategyRecommendations.delete(id);
+  }
+  
+  async markRecommendationFavorite(id: number, favorite: boolean): Promise<StrategyRecommendation> {
+    return this.updateRecommendation(id, { favorite });
+  }
+  
+  async markRecommendationApplied(id: number, applied: boolean): Promise<StrategyRecommendation> {
+    return this.updateRecommendation(id, { applied });
+  }
+
+  // Learning Module operations
+  async getLearningModules(): Promise<LearningModule[]> {
+    const modules = Array.from(this.learningModules.values());
+    modules.sort((a, b) => a.order - b.order); // Sort by order
+    return modules;
+  }
+  
+  async getLearningModule(id: number): Promise<LearningModule | undefined> {
+    return this.learningModules.get(id);
+  }
+  
+  async createLearningModule(module: InsertLearningModule): Promise<LearningModule> {
+    const id = this.learningModuleId++;
+    const newModule: LearningModule = {
+      ...module,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.learningModules.set(id, newModule);
+    return newModule;
+  }
+  
+  async updateLearningModule(id: number, module: Partial<LearningModule>): Promise<LearningModule> {
+    const existingModule = this.learningModules.get(id);
+    if (!existingModule) {
+      throw new Error(`Learning module with id ${id} not found`);
+    }
+    
+    const updatedModule = { 
+      ...existingModule, 
+      ...module,
+      updatedAt: new Date()
+    };
+    this.learningModules.set(id, updatedModule);
+    return updatedModule;
+  }
+  
+  async deleteLearningModule(id: number): Promise<boolean> {
+    return this.learningModules.delete(id);
+  }
+  
+  // Lesson operations
+  async getLessons(moduleId: number): Promise<Lesson[]> {
+    const lessons = Array.from(this.lessons.values())
+      .filter(lesson => lesson.moduleId === moduleId)
+      .sort((a, b) => a.order - b.order); // Sort by order
+    return lessons;
+  }
+  
+  async getLesson(id: number): Promise<Lesson | undefined> {
+    return this.lessons.get(id);
+  }
+  
+  async createLesson(lesson: InsertLesson): Promise<Lesson> {
+    const id = this.lessonId++;
+    const newLesson: Lesson = {
+      ...lesson,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.lessons.set(id, newLesson);
+    return newLesson;
+  }
+  
+  async updateLesson(id: number, lesson: Partial<Lesson>): Promise<Lesson> {
+    const existingLesson = this.lessons.get(id);
+    if (!existingLesson) {
+      throw new Error(`Lesson with id ${id} not found`);
+    }
+    
+    const updatedLesson = { 
+      ...existingLesson, 
+      ...lesson,
+      updatedAt: new Date()
+    };
+    this.lessons.set(id, updatedLesson);
+    return updatedLesson;
+  }
+  
+  async deleteLesson(id: number): Promise<boolean> {
+    return this.lessons.delete(id);
+  }
+  
+  // Quiz operations
+  async getQuizzes(lessonId: number): Promise<Quiz[]> {
+    const quizzes = Array.from(this.quizzes.values())
+      .filter(quiz => quiz.lessonId === lessonId);
+    return quizzes;
+  }
+  
+  async getQuiz(id: number): Promise<Quiz | undefined> {
+    return this.quizzes.get(id);
+  }
+  
+  async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
+    const id = this.quizId++;
+    const newQuiz: Quiz = {
+      ...quiz,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.quizzes.set(id, newQuiz);
+    return newQuiz;
+  }
+  
+  async updateQuiz(id: number, quiz: Partial<Quiz>): Promise<Quiz> {
+    const existingQuiz = this.quizzes.get(id);
+    if (!existingQuiz) {
+      throw new Error(`Quiz with id ${id} not found`);
+    }
+    
+    const updatedQuiz = { 
+      ...existingQuiz, 
+      ...quiz,
+      updatedAt: new Date()
+    };
+    this.quizzes.set(id, updatedQuiz);
+    return updatedQuiz;
+  }
+  
+  async deleteQuiz(id: number): Promise<boolean> {
+    return this.quizzes.delete(id);
+  }
+  
+  // Quiz Question operations
+  async getQuizQuestions(quizId: number): Promise<QuizQuestion[]> {
+    const questions = Array.from(this.quizQuestions.values())
+      .filter(question => question.quizId === quizId)
+      .sort((a, b) => a.order - b.order); // Sort by order
+    return questions;
+  }
+  
+  async getQuizQuestion(id: number): Promise<QuizQuestion | undefined> {
+    return this.quizQuestions.get(id);
+  }
+  
+  async createQuizQuestion(question: InsertQuizQuestion): Promise<QuizQuestion> {
+    const id = this.quizQuestionId++;
+    const newQuestion: QuizQuestion = {
+      ...question,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.quizQuestions.set(id, newQuestion);
+    return newQuestion;
+  }
+  
+  async updateQuizQuestion(id: number, question: Partial<QuizQuestion>): Promise<QuizQuestion> {
+    const existingQuestion = this.quizQuestions.get(id);
+    if (!existingQuestion) {
+      throw new Error(`Quiz question with id ${id} not found`);
+    }
+    
+    const updatedQuestion = { 
+      ...existingQuestion, 
+      ...question,
+      updatedAt: new Date()
+    };
+    this.quizQuestions.set(id, updatedQuestion);
+    return updatedQuestion;
+  }
+  
+  async deleteQuizQuestion(id: number): Promise<boolean> {
+    return this.quizQuestions.delete(id);
+  }
+  
+  // Quiz Answer operations
+  async getQuizAnswers(questionId: number): Promise<QuizAnswer[]> {
+    const answers = Array.from(this.quizAnswers.values())
+      .filter(answer => answer.questionId === questionId)
+      .sort((a, b) => a.order - b.order); // Sort by order
+    return answers;
+  }
+  
+  async createQuizAnswer(answer: InsertQuizAnswer): Promise<QuizAnswer> {
+    const id = this.quizAnswerId++;
+    const newAnswer: QuizAnswer = {
+      ...answer,
+      id
+    };
+    this.quizAnswers.set(id, newAnswer);
+    return newAnswer;
+  }
+  
+  async updateQuizAnswer(id: number, answer: Partial<QuizAnswer>): Promise<QuizAnswer> {
+    const existingAnswer = this.quizAnswers.get(id);
+    if (!existingAnswer) {
+      throw new Error(`Quiz answer with id ${id} not found`);
+    }
+    
+    const updatedAnswer = { 
+      ...existingAnswer, 
+      ...answer
+    };
+    this.quizAnswers.set(id, updatedAnswer);
+    return updatedAnswer;
+  }
+  
+  async deleteQuizAnswer(id: number): Promise<boolean> {
+    return this.quizAnswers.delete(id);
+  }
+  
+  // User Progress operations
+  async getUserProgress(userId: number): Promise<UserProgress[]> {
+    const progress = Array.from(this.userProgress.values())
+      .filter(p => p.userId === userId)
+      .sort((a, b) => (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)); // Sort by most recent
+    return progress;
+  }
+  
+  async getUserProgressForModule(userId: number, moduleId: number): Promise<UserProgress[]> {
+    const progress = Array.from(this.userProgress.values())
+      .filter(p => p.userId === userId && p.moduleId === moduleId);
+    return progress;
+  }
+  
+  async getUserProgressForLesson(userId: number, lessonId: number): Promise<UserProgress | undefined> {
+    return Array.from(this.userProgress.values())
+      .find(p => p.userId === userId && p.lessonId === lessonId);
+  }
+  
+  async getUserProgressForQuiz(userId: number, quizId: number): Promise<UserProgress | undefined> {
+    return Array.from(this.userProgress.values())
+      .find(p => p.userId === userId && p.quizId === quizId);
+  }
+  
+  async trackUserProgress(progress: InsertUserProgress): Promise<UserProgress> {
+    const id = this.userProgressId++;
+    const newProgress: UserProgress = {
+      ...progress,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.userProgress.set(id, newProgress);
+    return newProgress;
+  }
+  
+  async updateUserProgress(id: number, progress: Partial<UserProgress>): Promise<UserProgress> {
+    const existingProgress = this.userProgress.get(id);
+    if (!existingProgress) {
+      throw new Error(`User progress with id ${id} not found`);
+    }
+    
+    const updatedProgress = { 
+      ...existingProgress, 
+      ...progress,
+      updatedAt: new Date()
+    };
+    this.userProgress.set(id, updatedProgress);
+    return updatedProgress;
+  }
+  
+  // Badge operations
+  async getBadges(): Promise<Badge[]> {
+    return Array.from(this.badges.values());
+  }
+  
+  async getBadge(id: number): Promise<Badge | undefined> {
+    return this.badges.get(id);
+  }
+  
+  async createBadge(badge: InsertBadge): Promise<Badge> {
+    const id = this.badgeId++;
+    const newBadge: Badge = {
+      ...badge,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.badges.set(id, newBadge);
+    return newBadge;
+  }
+  
+  async updateBadge(id: number, badge: Partial<Badge>): Promise<Badge> {
+    const existingBadge = this.badges.get(id);
+    if (!existingBadge) {
+      throw new Error(`Badge with id ${id} not found`);
+    }
+    
+    const updatedBadge = { 
+      ...existingBadge, 
+      ...badge,
+      updatedAt: new Date()
+    };
+    this.badges.set(id, updatedBadge);
+    return updatedBadge;
+  }
+  
+  async deleteBadge(id: number): Promise<boolean> {
+    return this.badges.delete(id);
+  }
+  
+  // User Badge operations
+  async getUserBadges(userId: number): Promise<UserBadge[]> {
+    const userBadges = Array.from(this.userBadges.values())
+      .filter(ub => ub.userId === userId);
+    return userBadges;
+  }
+  
+  async awardBadge(userId: number, badgeId: number): Promise<UserBadge> {
+    const id = this.userBadgeId++;
+    const badge = this.badges.get(badgeId);
+    if (!badge) {
+      throw new Error(`Badge with id ${badgeId} not found`);
+    }
+    
+    const userBadge: UserBadge = {
+      id,
+      userId,
+      badgeId,
+      awardedAt: new Date()
+    };
+    this.userBadges.set(id, userBadge);
+    return userBadge;
+  }
+  
+  // Trading Workflow operations
+  async getTradingWorkflows(userId: number): Promise<TradingWorkflow[]> {
+    const workflows = Array.from(this.tradingWorkflows.values())
+      .filter(workflow => workflow.userId === userId);
+    
+    // Sort by createdAt date (newest first)
+    workflows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    return workflows;
+  }
+
+  async getTradingWorkflow(id: number): Promise<TradingWorkflow | undefined> {
+    return this.tradingWorkflows.get(id);
+  }
+
+  async createTradingWorkflow(workflow: InsertTradingWorkflow): Promise<TradingWorkflow> {
+    const id = this.tradingWorkflowId++;
+    const now = new Date();
+    
+    const newWorkflow: TradingWorkflow = {
+      id,
+      ...workflow,
+      executionCount: 0,
+      createdAt: now,
+      updatedAt: now,
+      logHistory: []
+    };
+    
+    this.tradingWorkflows.set(id, newWorkflow);
+    return newWorkflow;
+  }
+
+  async updateTradingWorkflow(id: number, workflow: Partial<TradingWorkflow>): Promise<TradingWorkflow> {
+    const existingWorkflow = this.tradingWorkflows.get(id);
+    
+    if (!existingWorkflow) {
+      throw new Error(`Trading workflow with id ${id} not found`);
+    }
+    
+    const updatedWorkflow = {
+      ...existingWorkflow,
+      ...workflow,
+      updatedAt: new Date()
+    };
+    
+    this.tradingWorkflows.set(id, updatedWorkflow);
+    return updatedWorkflow;
+  }
+
+  async updateWorkflowStatus(id: number, status: string): Promise<TradingWorkflow> {
+    return this.updateTradingWorkflow(id, { status });
+  }
+
+  async deleteTradingWorkflow(id: number): Promise<boolean> {
+    return this.tradingWorkflows.delete(id);
+  }
+
+  // Workflow Step operations
+  async getWorkflowSteps(workflowId: number): Promise<WorkflowStep[]> {
+    const steps = Array.from(this.workflowSteps.values())
+      .filter(step => step.workflowId === workflowId);
+    
+    // Sort by step order
+    steps.sort((a, b) => a.stepOrder - b.stepOrder);
+    
+    return steps;
+  }
+
+  async getWorkflowStep(id: number): Promise<WorkflowStep | undefined> {
+    return this.workflowSteps.get(id);
+  }
+
+  async createWorkflowStep(step: InsertWorkflowStep): Promise<WorkflowStep> {
+    const id = this.workflowStepId++;
+    const now = new Date();
+    
+    const newStep: WorkflowStep = {
+      id,
+      ...step,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowSteps.set(id, newStep);
+    return newStep;
+  }
+
+  async updateWorkflowStep(id: number, step: Partial<WorkflowStep>): Promise<WorkflowStep> {
+    const existingStep = this.workflowSteps.get(id);
+    
+    if (!existingStep) {
+      throw new Error(`Workflow step with id ${id} not found`);
+    }
+    
+    const updatedStep = {
+      ...existingStep,
+      ...step,
+      updatedAt: new Date()
+    };
+    
+    this.workflowSteps.set(id, updatedStep);
+    return updatedStep;
+  }
+
+  async deleteWorkflowStep(id: number): Promise<boolean> {
+    return this.workflowSteps.delete(id);
+  }
+  
+  // Workflow Condition operations
+  async getWorkflowConditions(workflowId: number): Promise<WorkflowCondition[]> {
+    return Array.from(this.workflowConditions.values())
+      .filter(condition => condition.workflowId === workflowId);
+  }
+
+  async getWorkflowCondition(id: number): Promise<WorkflowCondition | undefined> {
+    return this.workflowConditions.get(id);
+  }
+
+  async createWorkflowCondition(condition: InsertWorkflowCondition): Promise<WorkflowCondition> {
+    const id = this.workflowConditionId++;
+    const now = new Date();
+    
+    const newCondition: WorkflowCondition = {
+      id,
+      ...condition,
+      lastEvaluated: null,
+      lastResult: null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowConditions.set(id, newCondition);
+    return newCondition;
+  }
+
+  async updateWorkflowCondition(id: number, condition: Partial<WorkflowCondition>): Promise<WorkflowCondition> {
+    const existingCondition = this.workflowConditions.get(id);
+    
+    if (!existingCondition) {
+      throw new Error(`Workflow condition with id ${id} not found`);
+    }
+    
+    const updatedCondition = {
+      ...existingCondition,
+      ...condition,
+      updatedAt: new Date()
+    };
+    
+    this.workflowConditions.set(id, updatedCondition);
+    return updatedCondition;
+  }
+
+  async deleteWorkflowCondition(id: number): Promise<boolean> {
+    return this.workflowConditions.delete(id);
+  }
+
+  // Workflow Action operations
+  async getWorkflowActions(workflowId: number): Promise<WorkflowAction[]> {
+    return Array.from(this.workflowActions.values())
+      .filter(action => action.workflowId === workflowId);
+  }
+
+  async getWorkflowAction(id: number): Promise<WorkflowAction | undefined> {
+    return this.workflowActions.get(id);
+  }
+
+  async createWorkflowAction(action: InsertWorkflowAction): Promise<WorkflowAction> {
+    const id = this.workflowActionId++;
+    const now = new Date();
+    
+    const newAction: WorkflowAction = {
+      id,
+      ...action,
+      lastExecuted: null,
+      isEnabled: action.isEnabled ?? true,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowActions.set(id, newAction);
+    return newAction;
+  }
+
+  async updateWorkflowAction(id: number, action: Partial<WorkflowAction>): Promise<WorkflowAction> {
+    const existingAction = this.workflowActions.get(id);
+    
+    if (!existingAction) {
+      throw new Error(`Workflow action with id ${id} not found`);
+    }
+    
+    const updatedAction = {
+      ...existingAction,
+      ...action,
+      updatedAt: new Date()
+    };
+    
+    this.workflowActions.set(id, updatedAction);
+    return updatedAction;
+  }
+
+  async deleteWorkflowAction(id: number): Promise<boolean> {
+    return this.workflowActions.delete(id);
+  }
+  
+  // Workflow Execution Log operations
+  async getWorkflowExecutionLogs(workflowId: number, limit: number = 10): Promise<WorkflowExecutionLog[]> {
+    const logs = Array.from(this.workflowExecutionLogs.values())
+      .filter(log => log.workflowId === workflowId);
+    
+    // Sort by executedAt date (newest first) and limit the results
+    logs.sort((a, b) => new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime());
+    
+    return logs.slice(0, limit);
+  }
+
+  async createWorkflowExecutionLog(log: InsertWorkflowExecutionLog): Promise<WorkflowExecutionLog> {
+    const id = this.workflowExecutionLogId++;
+    const now = new Date();
+    
+    const newLog: WorkflowExecutionLog = {
+      id,
+      ...log,
+      executedAt: log.executedAt || now,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workflowExecutionLogs.set(id, newLog);
+    
+    // Update the workflow's execution count and last executed time
+    const workflow = this.tradingWorkflows.get(log.workflowId);
+    if (workflow) {
+      workflow.executionCount = (workflow.executionCount || 0) + 1;
+      workflow.lastExecutedAt = now;
+      workflow.logHistory = [...(workflow.logHistory || []), {
+        id: newLog.id,
+        status: newLog.status,
+        executedAt: newLog.executedAt,
+        message: newLog.message
+      }].slice(-10); // Keep only the 10 most recent logs in the workflow
+      
+      this.tradingWorkflows.set(workflow.id, workflow);
+    }
+    
+    return newLog;
+  }
 }
 
-export const storage = new DatabaseStorage();
+// Use MemStorage for development
+export const storage = new MemStorage();

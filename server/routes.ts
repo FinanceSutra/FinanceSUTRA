@@ -43,7 +43,8 @@ import {
   Badge,
   UserBadge
 } from "@shared/schema";
-import { getRecommendations, UserPreference as RecommendationUserPreference } from "./recommendation-engine";
+import { getRecommendations, saveRecommendationsToDatabase, UserPreference as RecommendationUserPreference } from "./recommendation-engine";
+import { generateAIRecommendations } from "./utils/openai";
 import { WebSocketServer } from 'ws';
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key';
@@ -72,6 +73,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         testMode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_')
       }
     });
+  });
+  
+  // Endpoint to check if specific secrets are available
+  app.post('/api/check-secrets', async (req: Request, res: Response) => {
+    try {
+      const { secretKeys } = req.body;
+      
+      if (!Array.isArray(secretKeys)) {
+        return res.status(400).json({ message: "secretKeys must be an array" });
+      }
+      
+      const secrets: Record<string, boolean> = {};
+      
+      // Check each secret key
+      secretKeys.forEach(key => {
+        secrets[key] = !!process.env[key];
+      });
+      
+      return res.json({ secrets });
+    } catch (error) {
+      console.error('Error checking secrets:', error);
+      return res.status(500).json({ message: "Internal server error checking secrets" });
+    }
   });
   
   // Set up WebSocket server for real-time data
@@ -2112,25 +2136,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userPreferenceSchema = z.object({
         riskTolerance: z.number().min(1).max(5),
         investmentHorizon: z.enum(['short', 'medium', 'long']),
-        preferredMarkets: z.array(z.string()),
+        preferredMarkets: z.array(z.string()).or(z.string()),
         tradingFrequency: z.enum(['day', 'swing', 'position']),
         capitalAvailable: z.number().positive(),
         automationLevel: z.enum(['manual', 'semi-automated', 'fully-automated']),
-        preferredIndicators: z.array(z.string())
+        preferredIndicators: z.array(z.string()).or(z.string())
       });
       
-      const preferences = userPreferenceSchema.parse(req.body);
+      // Parse the preferences, handling potential JSON strings
+      let preferences = req.body;
+      
+      // Handle potential JSON strings from form data
+      if (typeof preferences.preferredMarkets === 'string' && !Array.isArray(preferences.preferredMarkets)) {
+        try {
+          preferences.preferredMarkets = JSON.parse(preferences.preferredMarkets);
+        } catch (e) {
+          preferences.preferredMarkets = [preferences.preferredMarkets];
+        }
+      }
+      
+      if (typeof preferences.preferredIndicators === 'string' && !Array.isArray(preferences.preferredIndicators)) {
+        try {
+          preferences.preferredIndicators = JSON.parse(preferences.preferredIndicators);
+        } catch (e) {
+          preferences.preferredIndicators = [preferences.preferredIndicators];
+        }
+      }
+      
+      // Validate the processed preferences
+      preferences = userPreferenceSchema.parse(preferences);
+      
+      // Clear any existing recommendations
+      const existingRecommendations = await storage.getRecommendations(req.session.userId);
+      for (const rec of existingRecommendations) {
+        await storage.deleteRecommendation(rec.id);
+      }
+      
+      // Import and use the recommendation engine
+      const { convertUserPreference, getRecommendations, saveRecommendationsToDatabase } = await import('./recommendation-engine');
+      
+      // Convert from schema to internal format
+      const internalPreferences = convertUserPreference(preferences);
       
       // Get recommendations based on user preferences
-      const recommendations = await getRecommendations(req.session.userId, preferences);
+      const recommendations = await getRecommendations(req.session.userId, internalPreferences);
       
-      res.json(recommendations);
+      // Save updated recommendations to database
+      const savedRecommendations = await saveRecommendationsToDatabase(req.session.userId, recommendations);
+      
+      res.json(savedRecommendations);
     } catch (error) {
+      console.error('Error generating recommendations:', error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: 'Invalid preferences', errors: error.errors });
       } else {
-        console.error('Error generating recommendations:', error);
-        res.status(500).json({ message: 'Failed to generate recommendations' });
+        res.status(500).json({ message: 'Failed to generate recommendations: ' + (error instanceof Error ? error.message : String(error)) });
       }
     }
   });

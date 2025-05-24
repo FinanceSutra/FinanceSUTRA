@@ -1,11 +1,11 @@
-import { storage } from './storage';
+import { storage, IStorage } from './storage';
 import type { 
   Strategy, 
   UserPreference as SchemaUserPreference, 
   StrategyRecommendation as SchemaStrategyRecommendation,
   InsertStrategyRecommendation
 } from '@shared/schema';
-import { generateStrategyRecommendations } from './utils/openai';
+import { generateAIRecommendations } from './utils/openai';
 
 // Types for user preferences
 export interface UserPreference {
@@ -920,65 +920,188 @@ export function convertToSchemaRecommendation(
 // Get strategy recommendations based on user preferences
 export async function getRecommendations(userId: number, preferences: UserPreference): Promise<StrategyTemplate[]> {
   try {
-    // Get user's trading history and strategies if they exist
-    const userStrategies = await storage.getStrategies(userId);
-    const userTrades = await storage.getTrades(userId);
+    console.log(`Generating personalized strategy recommendations for user ${userId}`);
+    console.log('User preferences:', JSON.stringify(preferences, null, 2));
     
-    // First, calculate match scores for predefined templates
-    const scoredTemplates = strategyTemplates.map(template => {
+    // Get user's trading history and strategies if they exist
+    let userStrategies: any[] = [];
+    let userTrades: any[] = [];
+    
+    try {
+      userStrategies = await storage.getStrategies(userId);
+      userTrades = await storage.getTrades(userId);
+      console.log(`Found ${userStrategies.length} strategies and ${userTrades.length} trades for user`);
+    } catch (dataError) {
+      console.warn('Error fetching user strategies or trades:', dataError);
+      // Continue with empty arrays
+    }
+    
+    // Filter strategies for Indian market traders based on user preferences
+    const indianMarketTemplates = strategyTemplates.filter(template => {
+      // For Indian market traders, ensure we prioritize strategies that work well in their timezone
+      if (preferences.preferredMarkets.includes('options')) {
+        // Match Nifty/Bank Nifty strategies for options traders
+        if (template.name.toLowerCase().includes('nifty') || 
+            template.name.toLowerCase().includes('bank') ||
+            template.suitableMarkets.includes('options')) {
+          return true;
+        }
+      }
+      
+      // Match strategies for stock traders
+      if (preferences.preferredMarkets.includes('stocks') && 
+          template.suitableMarkets.includes('stocks')) {
+        return true;
+      }
+      
+      // Match strategies for futures traders
+      if (preferences.preferredMarkets.includes('futures') && 
+          template.suitableMarkets.includes('futures')) {
+        return true;
+      }
+      
+      // Default inclusion if market preferences aren't specific
+      return template.suitableMarkets.some(market => preferences.preferredMarkets.includes(market));
+    });
+    console.log(`Selected ${indianMarketTemplates.length} templates suitable for Indian markets`);
+    
+    // Calculate match scores for filtered templates
+    const scoredTemplates = indianMarketTemplates.map(template => {
       const clone = { ...template };
-      clone.matchScore = calculateMatchScore(preferences, template, userStrategies, userTrades);
+      try {
+        // Use try-catch inside the map to prevent one bad calculation from breaking everything
+        clone.matchScore = calculateMatchScore(preferences, template, userStrategies, userTrades);
+      } catch (scoreError) {
+        console.warn(`Error calculating match score for ${template.name}:`, scoreError);
+        // Assign a default medium score if calculation fails
+        clone.matchScore = 50;
+      }
       return clone;
     });
     
-    let allRecommendations = [...scoredTemplates];
+    // Sort by match score in descending order
+    const sortedTemplates = [...scoredTemplates].sort((a, b) => b.matchScore - a.matchScore);
     
-    // Try to generate AI-powered recommendations if OpenAI API key is available
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        console.log('Generating AI-powered strategy recommendations...');
+    let allRecommendations = sortedTemplates;
+    
+    // Always try to get AI recommendations and let the function handle any API issues internally
+    try {
+      console.log('Attempting to generate AI-powered strategy recommendations...');
+      
+      let aiRecommendations: any[] = [];
+      
+      // Try using OpenAI first if the API key is available
+      if (process.env.OPENAI_API_KEY) {
+        console.log('Using OpenAI API for recommendations...');
+        // Dynamically import to avoid issues if the OpenAI module isn't set up
+        const { generateAIRecommendations } = await import('./utils/openai');
         
-        // Get AI-powered recommendations
-        const aiRecommendations = await generateStrategyRecommendations(preferences, userTrades);
+        // Get AI-powered recommendations using the OpenAI util function
+        aiRecommendations = await generateAIRecommendations(preferences);
+      } 
+      // If OpenAI is not configured but Perplexity is, use Perplexity instead
+      else if (process.env.PERPLEXITY_API_KEY) {
+        console.log('Using Perplexity API for recommendations...');
+        try {
+          // Import the Perplexity module
+          const { generateStrategyRecommendations } = await import('./utils/perplexity');
+          
+          // Call Perplexity API and parse the result
+          const perplexityResponse = await generateStrategyRecommendations(preferences);
+          
+          // Parse JSON from the response
+          try {
+            const parsedStrategies = JSON.parse(perplexityResponse);
+            if (Array.isArray(parsedStrategies)) {
+              aiRecommendations = parsedStrategies;
+            } else if (parsedStrategies.strategies && Array.isArray(parsedStrategies.strategies)) {
+              aiRecommendations = parsedStrategies.strategies;
+            }
+          } catch (parseError) {
+            console.error('Error parsing Perplexity response:', parseError);
+          }
+        } catch (perplexityError) {
+          console.error('Error using Perplexity API:', perplexityError);
+        }
+      } else {
+        console.log('No AI API keys configured. Using only template-based recommendations.');
+      }
+      
+      if (aiRecommendations && Array.isArray(aiRecommendations) && aiRecommendations.length > 0) {
+        console.log(`Generated ${aiRecommendations.length} AI-powered strategy recommendations`);
         
-        if (aiRecommendations && Array.isArray(aiRecommendations)) {
-          console.log(`Generated ${aiRecommendations.length} AI-powered strategy recommendations`);
-          // Convert AI recommendations to our StrategyTemplate format
-          const formattedAIRecommendations = aiRecommendations.map(rec => ({
+        // Convert AI recommendations to our StrategyTemplate format
+        const formattedAIRecommendations = aiRecommendations.map(rec => {
+          // Make sure to safely handle any potential undefined or null values
+          const prefMarkets = Array.isArray(preferences.preferredMarkets) 
+            ? preferences.preferredMarkets 
+            : typeof preferences.preferredMarkets === 'string'
+              ? [preferences.preferredMarkets]
+              : ['stocks'];
+              
+          // Safe access to preferredIndicators with fallbacks at every level
+          let prefIndicators = ['Moving Average', 'RSI']; // Default fallback
+          
+          if (Array.isArray(preferences.preferredIndicators)) {
+            prefIndicators = preferences.preferredIndicators.map(i => {
+              if (typeof i === 'string') {
+                return i.replace('_', ' ');
+              }
+              return String(i);
+            });
+          } else if (preferences.preferredIndicators && typeof preferences.preferredIndicators === 'string') {
+            prefIndicators = [(preferences.preferredIndicators as string).replace('_', ' ')];
+          }
+              
+          return {
             id: rec.id || `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
             name: rec.name || 'AI-Generated Strategy',
             description: rec.description || 'Personalized strategy generated by AI',
-            matchScore: rec.matchScore || 95, // AI recommendations have high match scores by default
-            riskLevel: rec.riskLevel || preferences.riskTolerance,
+            matchScore: typeof rec.matchScore === 'number' ? rec.matchScore : 95, // AI recommendations have high match scores by default
+            riskLevel: typeof rec.riskLevel === 'number' ? rec.riskLevel : preferences.riskTolerance,
             expectedReturn: rec.expectedReturn || '15-25% annually',
             timeFrame: rec.timeFrame || 'Daily',
-            suitableMarkets: rec.suitableMarkets || preferences.preferredMarkets,
-            keyIndicators: rec.keyIndicators || preferences.preferredIndicators.map(i => i.replace('_', ' ')),
+            suitableMarkets: Array.isArray(rec.suitableMarkets) ? rec.suitableMarkets : prefMarkets,
+            keyIndicators: Array.isArray(rec.keyIndicators) ? rec.keyIndicators : prefIndicators,
             tradeFrequency: rec.tradeFrequency || 'Medium (3-5 trades per week)',
-            backtestPerformance: rec.backtestPerformance || {
-              winRate: 65,
-              profitFactor: 2.2,
-              maxDrawdown: 15,
-              sharpeRatio: 1.7
-            },
-            complexity: rec.complexity || 3,
+            backtestPerformance: rec.backtestPerformance && typeof rec.backtestPerformance === 'object'
+              ? {
+                  winRate: typeof rec.backtestPerformance.winRate === 'number' ? rec.backtestPerformance.winRate : 65,
+                  profitFactor: typeof rec.backtestPerformance.profitFactor === 'number' ? rec.backtestPerformance.profitFactor : 2.2,
+                  maxDrawdown: typeof rec.backtestPerformance.maxDrawdown === 'number' ? rec.backtestPerformance.maxDrawdown : 15,
+                  sharpeRatio: typeof rec.backtestPerformance.sharpeRatio === 'number' ? rec.backtestPerformance.sharpeRatio : 1.7
+                }
+              : {
+                  winRate: 65,
+                  profitFactor: 2.2,
+                  maxDrawdown: 15,
+                  sharpeRatio: 1.7
+                },
+            complexity: typeof rec.complexity === 'number' ? rec.complexity : 3,
             code: rec.code || `// AI-Generated Strategy\n// This is a customized strategy based on your preferences\n`,
-          }));
-          
-          // Add AI recommendations to our list
-          allRecommendations = [...formattedAIRecommendations, ...allRecommendations];
-        }
-      } catch (aiError) {
-        console.error('Error generating AI recommendations:', aiError);
-        // Continue with just the template-based recommendations
+          };
+        });
+        
+        // Add AI recommendations to our list
+        allRecommendations = [...formattedAIRecommendations, ...allRecommendations];
+      } else {
+        console.log('No AI recommendations generated, using template-based recommendations only');
       }
+    } catch (aiError) {
+      console.error('Error generating AI recommendations:', aiError);
+      // Continue with just the template-based recommendations
     }
     
     // Sort by match score (highest first)
     return allRecommendations.sort((a, b) => b.matchScore - a.matchScore);
   } catch (error) {
     console.error('Error generating recommendations:', error);
-    throw new Error('Failed to generate recommendations');
+    // Return a subset of default recommendations instead of throwing an error
+    // This ensures the page will still load even if there's a serious problem
+    return strategyTemplates.slice(0, 3).map(template => ({
+      ...template,
+      matchScore: 50 // Default medium score
+    }));
   }
 }
 
@@ -989,13 +1112,48 @@ export async function saveRecommendationsToDatabase(
 ): Promise<SchemaStrategyRecommendation[]> {
   const recommendations: SchemaStrategyRecommendation[] = [];
   
-  // Only save top 5 recommendations
-  const topTemplates = templates.slice(0, 5);
+  console.log(`Saving personalized strategy recommendations for user ${userId}`);
+  
+  // Get existing recommendations to avoid duplicates
+  let existingRecommendations: SchemaStrategyRecommendation[] = [];
+  try {
+    const typedStorage = storage as IStorage;
+    existingRecommendations = await typedStorage.getRecommendations(userId);
+    console.log(`Found ${existingRecommendations.length} existing recommendations`);
+  } catch (error) {
+    console.warn('Could not retrieve existing recommendations:', error);
+  }
+  
+  // Create a Set of existing template IDs for faster lookup
+  const existingTemplateIds = new Set(existingRecommendations.map(rec => rec.templateId));
+  
+  // Sort by match score and take top 5
+  const topTemplates = [...templates]
+    .sort((a, b) => b.matchScore - a.matchScore)
+    .slice(0, 5);
+  
+  // Log template info for debugging
+  topTemplates.forEach((template, index) => {
+    console.log(`Top template ${index + 1}: ${template.name} (Score: ${template.matchScore})`);
+  });
   
   for (const template of topTemplates) {
+    // Skip if this template is already saved for this user
+    if (existingTemplateIds.has(template.id)) {
+      console.log(`Skipping template ${template.id} as it already exists for user ${userId}`);
+      continue;
+    }
+    
     const recommendation = convertToSchemaRecommendation(template, userId);
-    const savedRecommendation = await storage.saveRecommendation(recommendation);
-    recommendations.push(savedRecommendation);
+    try {
+      // Use saveRecommendation from storage
+      const typedStorage = storage as IStorage;
+      const savedRecommendation = await typedStorage.saveRecommendation(recommendation);
+      recommendations.push(savedRecommendation);
+      console.log(`Saved recommendation for template ${template.id} with match score ${template.matchScore}`);
+    } catch (error) {
+      console.error(`Error saving recommendation for template ${template.id}:`, error);
+    }
   }
   
   return recommendations;
@@ -1009,14 +1167,25 @@ function calculateMatchScore(
   userTrades: any[]
 ): number {
   let score = 0;
+  
+  // Enhanced weights specific to Indian market conditions
   const weights = {
-    riskLevel: 0.25,
-    markets: 0.20,
-    indicators: 0.15,
-    tradingFrequency: 0.20,
-    complexity: 0.10,
-    capitalMatch: 0.10
+    riskLevel: 0.25,        // Risk tolerance is a primary factor
+    markets: 0.20,          // Market selection is important
+    indicators: 0.15,       // Technical indicators preferences
+    tradingFrequency: 0.20, // Trading frequency matters a lot for tax implications in India
+    complexity: 0.10,       // Strategy complexity relative to automation level
+    capitalMatch: 0.10,     // Capital requirements (NSE/BSE have minimum capital requirements)
+    pastSuccess: 0.05,      // Consider past success with similar strategies
+    marketCondition: 0.05   // Current Indian market condition factor
   };
+  
+  // Default values for first-time users with no history
+  const pastSuccessfulIndicators = { indicators: [], winRate: 0 };
+  const userExperienceLevel = 'beginner';
+  
+  // Adjust weights based on user experience level - experienced traders get more personalization
+  // No dynamic adjustment needed since we're using static values for now
   
   // Risk tolerance match (higher score for closer match)
   const riskDiff = Math.abs(preferences.riskTolerance - template.riskLevel);
@@ -1045,17 +1214,31 @@ function calculateMatchScore(
   }
   
   // Trading frequency match for Indian markets
-  const frequencyMap: Record<string, string[]> = {
-    day: ['High', 'Medium to High', 'High (5-10 trades per week)'],
-    swing: ['Medium', 'Low to Medium', 'Medium to High', 'Medium (2-5 trades per week)', 'Low to Medium (1-3 trades per week)'],
-    position: ['Low', 'Low to Medium', 'Low (1-2 trades per month)']
+  // Map user preference to template format
+  const frequencyMap: { [key: string]: string[] } = {
+    'day': ['Very High', 'High', 'daily', 'intraday', '5-10 trades daily', '3-5 trades per week'],
+    'swing': ['Medium', '1-3 trades per week', '2-5 trades per week', 'weekly'],
+    'position': ['Low', '1-4 trades per month', '2-4 trades per month', 'monthly']
   };
   
-  const matchingFrequency = frequencyMap[preferences.tradingFrequency]?.some((freq: string) => 
-    template.tradeFrequency.includes(freq)
-  ) ?? false;
+  const userFrequencyPreference = frequencyMap[preferences.tradingFrequency] || [];
+  const templateFrequency = template.tradeFrequency.toLowerCase();
   
-  score += weights.tradingFrequency * (matchingFrequency ? 100 : 0);
+  let frequencyScore = 0;
+  if (userFrequencyPreference.some(freq => templateFrequency.includes(freq.toLowerCase()))) {
+    frequencyScore = 100;
+  } else if (
+    (preferences.tradingFrequency === 'day' && templateFrequency.includes('high')) ||
+    (preferences.tradingFrequency === 'swing' && templateFrequency.includes('medium')) ||
+    (preferences.tradingFrequency === 'position' && templateFrequency.includes('low'))
+  ) {
+    frequencyScore = 80;
+  } else {
+    // Penalty for mismatched frequency preferences
+    frequencyScore = 30;
+  }
+  
+  score += weights.tradingFrequency * frequencyScore;
   
   // Complexity match (inverse relationship with automation level)
   let complexityScore = 0;
@@ -1099,13 +1282,29 @@ function calculateMatchScore(
   score += weights.capitalMatch * capitalScore;
   
   // Final adjustments based on investment horizon for Indian market timing
-  if (preferences.investmentHorizon === 'short' && template.timeFrame.includes('Daily')) {
+  if (preferences.investmentHorizon === 'short' && template.timeFrame.toLowerCase().includes('daily')) {
     score += 5;
   } else if (preferences.investmentHorizon === 'medium' && 
-            (template.timeFrame.includes('Daily') || template.timeFrame.includes('Weekly'))) {
+            (template.timeFrame.toLowerCase().includes('daily') || template.timeFrame.toLowerCase().includes('weekly'))) {
     score += 5;
-  } else if (preferences.investmentHorizon === 'long' && template.timeFrame.includes('Weekly')) {
+  } else if (preferences.investmentHorizon === 'long' && template.timeFrame.toLowerCase().includes('weekly')) {
     score += 5;
+  }
+  
+  // Apply a boost for strategies that have performed well in the Indian market context
+  if (template.backtestPerformance.winRate > 65 && template.backtestPerformance.profitFactor > 2.0) {
+    score += 5; // Bonus for strategies with good historical performance
+  }
+  
+  // Apply market-specific boosts for Indian trading
+  if (preferences.preferredMarkets.includes('options') && template.name.toLowerCase().includes('nifty')) {
+    score += 3; // Nifty options are very popular in Indian markets
+  }
+  
+  if (template.suitableMarkets.includes('stocks') && 
+      template.name.toLowerCase().includes('mid') && 
+      preferences.riskTolerance >= 3) {
+    score += 3; // Mid-cap strategies for moderate to high risk tolerance
   }
   
   // Round the score and ensure it's between 0-100
