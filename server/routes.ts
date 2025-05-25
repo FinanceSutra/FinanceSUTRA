@@ -746,7 +746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       tradesData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       // Calculate additional metrics
-      const profitFactor = totalLossAmount > 0 ? totalWinAmount / totalLossAmount : totalWinAmount;
+      let profitFactor = totalLossAmount > 0 ? totalWinAmount / totalLossAmount : totalWinAmount;
       const averageProfit = winCount > 0 ? totalWinAmount / winCount : 0;
       const averageLoss = lossCount > 0 ? totalLossAmount / lossCount : 0;
       const maxConsecutiveWins = Math.floor(Math.random() * 5) + 2;

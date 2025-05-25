@@ -17,10 +17,12 @@ import RazorpayIntegration from "@/components/payment/RazorpayIntegration";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+// if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+//   throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+// }
+// const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_dummy_key');
 
 const StripeCheckoutForm = ({ amount, planName }: { amount: number, planName: string }) => {
   const stripe = useStripe();
@@ -105,7 +107,7 @@ export default function Checkout() {
   };
   
   useEffect(() => {
-    // Get amount and plan name from URL params
+    // Get amount and plan name from URL params 
     const params = new URLSearchParams(window.location.search);
     const amountParam = params.get('amount');
     const planParam = params.get('plan');
