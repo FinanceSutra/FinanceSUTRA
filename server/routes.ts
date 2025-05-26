@@ -46,6 +46,7 @@ import {
 import { getRecommendations, saveRecommendationsToDatabase, UserPreference as RecommendationUserPreference } from "./recommendation-engine";
 import { generateAIRecommendations } from "./utils/openai";
 import { WebSocketServer } from 'ws';
+import portfolioRoutes from './routes/portfolio';
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key';
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || 'price_default_monthly'; // You should set this in your environment
@@ -62,6 +63,9 @@ declare module "express-session" {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+
+  // Register portfolio routes
+  app.use('/api/portfolio', portfolioRoutes);
   
   // Add an API status endpoint
   app.get('/api/status', (req, res) => {
@@ -2333,6 +2337,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
       isActive: true,
     },
   ];
+
+  // Research routes
+
+  app.post('/api/research/query', async (req: Request, res: Response) => {
+
+    try {
+
+      const { query } = req.body;
+
+      
+
+      if (!query || typeof query !== 'string') {
+
+        return res.status(400).json({ error: 'Query is required' });
+
+      }
+
+
+
+      // Check if we have API keys available
+
+      const hasOpenAI = !!process.env.OPENAI_API_KEY;
+
+      const hasPerplexity = !!process.env.PERPLEXITY_API_KEY;
+
+
+
+      if (!hasOpenAI && !hasPerplexity) {
+
+        return res.status(503).json({ 
+
+          error: 'Research service unavailable. API keys are required for trading research.' 
+
+        });
+
+      }
+
+
+
+      let response = '';
+
+      let citations: string[] = [];
+
+
+
+      // Use Perplexity for real-time market research if available
+
+      if (hasPerplexity) {
+
+        try {
+
+          const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+
+            method: 'POST',
+
+            headers: {
+
+              'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+
+              'Content-Type': 'application/json'
+
+            },
+
+            body: JSON.stringify({
+
+              model: 'llama-3.1-sonar-small-128k-online',
+
+              messages: [
+
+                {
+
+                  role: 'system',
+
+                  content: 'You are a financial research assistant specializing in Indian stock markets. Provide accurate, up-to-date information about Indian stocks, market trends, and trading strategies. Always cite your sources and focus on Indian market context including NSE, BSE, and major Indian companies.'
+
+                },
+
+                {
+
+                  role: 'user',
+
+                  content: query
+
+                }
+
+              ],
+
+              temperature: 0.2,
+
+              max_tokens: 1000,
+
+              return_citations: true,
+
+              search_recency_filter: 'week'
+
+            })
+
+          });
+
+
+
+          if (perplexityResponse.ok) {
+
+            const data = await perplexityResponse.json();
+
+            response = data.choices[0]?.message?.content || '';
+
+            citations = data.citations || [];
+
+          }
+
+        } catch (perplexityError) {
+
+          console.log('Perplexity API error, falling back to OpenAI');
+
+        }
+
+      }
+
+
+
+      // Fallback to OpenAI if Perplexity failed or unavailable
+
+      if (!response && hasOpenAI) {
+
+        const openai = await import('openai');
+
+        const client = new openai.default({
+
+          apiKey: process.env.OPENAI_API_KEY
+
+        });
+
+
+
+        const completion = await client.chat.completions.create({
+
+          model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+
+          messages: [
+
+            {
+
+              role: 'system',
+
+              content: 'You are a financial research assistant specializing in Indian stock markets. Provide comprehensive analysis about Indian stocks, market trends, sectors, and trading strategies. Focus on NSE, BSE, major Indian companies like Reliance, TCS, Infosys, HDFC, etc. Include relevant financial metrics, recent performance data, and market insights relevant to Indian traders.'
+
+            },
+
+            {
+
+              role: 'user',
+
+              content: query
+
+            }
+
+          ],
+
+          temperature: 0.3,
+
+          max_tokens: 1000
+
+        });
+
+
+
+        response = completion.choices[0]?.message?.content || 'Unable to generate response';
+
+      }
+
+
+
+      if (!response) {
+
+        return res.status(503).json({ 
+
+          error: 'Research service temporarily unavailable. Please try again.' 
+
+        });
+
+      }
+
+
+
+      res.json({
+
+        response,
+
+        citations: citations.length > 0 ? citations : undefined
+
+      });
+
+
+
+    } catch (error: any) {
+
+      console.error('Research query error:', error);
+
+      res.status(500).json({ 
+
+        error: 'Failed to process research query. Please try again.' 
+
+      });
+
+    }
+
+  });
+  
   
   // Get portfolio risk metrics
   app.get('/api/risk/portfolio', (req, res) => {

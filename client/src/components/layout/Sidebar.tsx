@@ -17,6 +17,9 @@ import {
   ShieldAlert,
   GraduationCap,
   Workflow,
+  BarChart2,
+  PieChart,
+  Brain,
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -166,6 +169,12 @@ const Sidebar: React.FC = () => {
         </NavItem>
         <NavItem href="/risk-management" icon={<ShieldAlert />} isActive={location === '/risk-management'}>
           Risk Management
+        </NavItem>
+         <NavItem href="/portfolio-analysis" icon={<PieChart />} isActive={location === '/portfolio-analysis'}>
+          Portfolio Analysis
+        </NavItem>
+        <NavItem href="/research" icon={<Brain />} isActive={location === '/research'}>
+          AI Research
         </NavItem>
         <NavItem href="/trading-workflows" icon={<Workflow />} isActive={location === '/trading-workflows'}>
           Workflow Automation

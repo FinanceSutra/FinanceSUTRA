@@ -100,11 +100,11 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5001;
+  const port = 5003;
   server.listen(port, () => {
     log(`Server started successfully on port ${port}`);
     log(`Environment: ${app.get("env")}`);
     log(`REPLIT_DOMAINS: ${process.env.REPLIT_DOMAINS || 'not set'}`);
-    log(`Public URL: https://${process.env.REPLIT_DOMAINS || 'localhost:5001'}`);
+    log(`Public URL: https://${process.env.REPLIT_DOMAINS || 'localhost:5003'}`);
   });
 })();
