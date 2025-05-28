@@ -29,6 +29,7 @@ import TradingWorkflows from "@/pages/trading-workflows";
 import CreateWorkflow from "@/pages/create-workflow";
 import WorkflowDetails from "@/pages/workflow-details";
 import PortfolioAnalysis from "@/pages/portfolio-analysis";
+import ResearchPage from "@/pages/research";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileNav from "@/components/layout/MobileNav";
 import { useState } from "react";
@@ -62,6 +63,7 @@ const pageComponents = {
   CreateWorkflow: CreateWorkflow as React.ComponentType,
   WorkflowDetails: WorkflowDetails as React.ComponentType,
   PortfolioAnalysis: PortfolioAnalysis as React.ComponentType,
+  ResearchPage: ResearchPage as React.ComponentType,
   TestPage: TestPage as React.ComponentType,
   AuthPage: AuthPage as React.ComponentType,
   NotFound: NotFound as React.ComponentType
@@ -95,6 +97,7 @@ function Router() {
       <ProtectedRoute path="/edit-workflow/:id" component={pageComponents.CreateWorkflow} />
       <ProtectedRoute path="/workflow/:id" component={pageComponents.WorkflowDetails} />
       <ProtectedRoute path="/portfolio-analysis" component={pageComponents.PortfolioAnalysis} />
+      <ProtectedRoute path="/research" component={pageComponents.ResearchPage} />
       <ProtectedRoute path="/test" component={pageComponents.TestPage} />
       <Route path="/auth">
         {(params) => <pageComponents.AuthPage {...params} />}
