@@ -66,6 +66,62 @@ func main() {
             http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
         }
     })
+    // Auto-migrate DeployStrategy model
+    db.AutoMigrate(&models.DeployedStrategy{})
+
+    h2 := &handlers.DeployStrategyHandler{DB: db}
+
+    http.HandleFunc("/deploy-strategy", func(w http.ResponseWriter, r *http.Request) {
+        switch r.Method {
+        case http.MethodGet:
+            h2.GetDeployedStrategies(w, r)
+        case http.MethodPost:
+            h2.CreateDeployedStrategy(w, r)
+        default:
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
+    http.HandleFunc("/deploy-strategy/", func(w http.ResponseWriter, r *http.Request) {
+        switch r.Method {
+        case http.MethodGet:
+            h2.GetDeployedStrategy(w, r)
+        case http.MethodPut:
+            h2.UpdateDeployedStrategy(w, r)
+        default:
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
+        // Auto-migrate StrategyRecommendation model
+    db.AutoMigrate(&models.StrategyRecommendation{})
+
+    h3 := &handlers.StrategyRecommendationHandler{DB: db}
+
+    // Handle GET and POST /strategy-recommendations
+    http.HandleFunc("/strategy-recommendations", func(w http.ResponseWriter, r *http.Request) {
+        switch r.Method {
+        case http.MethodGet:
+            h3.GetAllRecommendations(w, r)
+        case http.MethodPost:
+            h3.CreateRecommendation(w, r)
+        default:
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
+    // Handle GET and PUT /strategy-recommendations/{id}
+    http.HandleFunc("/strategy-recommendations/", func(w http.ResponseWriter, r *http.Request) {
+        switch r.Method {
+        case http.MethodGet:
+            h3.GetRecommendationByID(w, r)
+        case http.MethodPut:
+            h3.UpdateRecommendation(w, r)
+        default:
+            http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
 
     log.Println("Server started on :8080")
     log.Fatal(http.ListenAndServe(":8080", nil))

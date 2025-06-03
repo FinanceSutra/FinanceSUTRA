@@ -233,7 +233,7 @@ type DeployedStrategy struct {
 	PercentPnl     float64   `db:"percent_pnl"`
 	DeployedAt     time.Time `db:"deployed_at"`
 	LastUpdated    time.Time `db:"last_updated"`
-	Metadata       []byte    `db:"metadata"`
+	Metadata       json.RawMessage `gorm:"type:json"` // accepts raw JSON objects or arrays
 }
 
 // InsertDeployedStrategy represents the insert schema for deployed_strategies table
