@@ -135,18 +135,53 @@ const CreateStrategy: React.FC = () => {
   // Create save strategy mutation
   const saveStrategyMutation = useMutation({
     mutationFn: async (data: Partial<Strategy>) => {
-      // console.log(data);
-      // Create new strategy
-      return apiRequest('POST', '/api/strategies', data);
+      try {
+        // Save to frontend API
+        const frontendResponse = await apiRequest('POST', '/api/strategies', data);
+        const frontendData = await frontendResponse.json();
+
+        try {
+          // Save to backend API
+          const backendResponse = await apiRequest('POST', 'http://localhost:8080/strategies', data);
+          const backendData = await backendResponse.json();
+
+          // Return both responses
+          return {
+            frontend: frontendData,
+            backend: backendData,
+            success: true
+          };
+        } catch (backendError) {
+          console.error('Backend save failed:', backendError);
+          // If backend fails, still return frontend data but mark partial success
+          return {
+            frontend: frontendData,
+            success: 'partial',
+            error: 'Backend save failed'
+          };
+        }
+      } catch (error) {
+        console.error('Strategy save failed:', error);
+        throw new Error('Failed to save strategy: ' + (error as Error).message);
+      }
     },
-    onSuccess: () => {
-      toast({
-        title: 'Strategy created',
-        description: 'Your strategy has been successfully created',
-      });
+    onSuccess: (data) => {
+      if (data.success === 'partial') {
+        toast({
+          title: 'Strategy partially saved',
+          description: 'Strategy was saved to frontend but backend save failed. Some features may be limited.',
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: 'Strategy created',
+          description: 'Your strategy has been successfully created and saved',
+        });
+      }
       
-      // Invalidate queries
+      // Invalidate all strategy-related queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['/api/strategies'] });
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
       
       // Redirect to strategies page after creating a new strategy
       setLocation('/strategies');

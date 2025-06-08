@@ -2,10 +2,11 @@ package handlers
 
 import (
     "encoding/json"
-    "net/http"
+    "net/http" 
     "strconv"
 	"go-backend/models"
     "gorm.io/gorm"
+    "fmt"
 )
 
 type StrategyHandler struct {
@@ -47,7 +48,10 @@ func (h *StrategyHandler) GetStrategy(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /strategies - create a new strategy
+
 func (h *StrategyHandler) CreateStrategy(w http.ResponseWriter, r *http.Request) {
+    fmt.Println("Method:", r.Method)
+    fmt.Println("URL:", r.URL.String())
     var strategy models.Strategy
     if err := json.NewDecoder(r.Body).Decode(&strategy); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)

@@ -29,7 +29,11 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   strategyId: z.string().min(1, "Strategy is required"),
-  brokerId: z.string().min(1, "Broker is required"),
+  brokerId: z.union([
+    z.string().regex(/^\d+$/, "Broker must be numeric"),
+    z.literal("paper-trading")
+  ]),
+  
   name: z.string().min(3, "Name must be at least 3 characters").max(50, "Name must be less than 50 characters"),
   lotMultiplier: z.string().regex(/^\d+(\.\d+)?$/, "Must be a valid number"),
   capitalDeployed: z.string().regex(/^\d+(\.\d+)?$/, "Must be a valid number"),
@@ -69,8 +73,32 @@ export default function DeployStrategyPage() {
   const { data: strategies, isLoading: isLoadingStrategies } = useQuery({
     queryKey: ['/api/strategies'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/strategies');
-      return await response.json() as Strategy[];
+      // Fetch from frontend API
+      const frontendResponse = await apiRequest('GET', '/api/strategies');
+      const frontendStrategies = await frontendResponse.json() as Strategy[];
+
+      try {
+        // Fetch from backend API
+        const backendResponse = await apiRequest('GET', 'http://localhost:8080/strategies');
+        const backendStrategies = await backendResponse.json() as Strategy[];
+
+        // Merge strategies, preferring frontend versions if duplicates exist
+        const mergedStrategies = [...backendStrategies];
+        frontendStrategies.forEach(frontendStrategy => {
+          const index = mergedStrategies.findIndex(s => s.id === frontendStrategy.id);
+          if (index >= 0) {
+            mergedStrategies[index] = frontendStrategy;
+          } else {
+            mergedStrategies.push(frontendStrategy);
+          }
+        });
+
+        return mergedStrategies;
+      } catch (error) {
+        console.warn('Failed to fetch backend strategies:', error);
+        // If backend fetch fails, return frontend strategies
+        return frontendStrategies;
+      }
     }
   });
 
@@ -107,7 +135,7 @@ export default function DeployStrategyPage() {
     const formattedData = {
       ...data,
       strategyId: parseInt(data.strategyId),
-      brokerId: parseInt(data.brokerId),
+      brokerId: data.brokerId === "paper-trading" ? null : parseInt(data.brokerId),
     };
 
     deployStrategyMutation.mutate(formattedData);
@@ -139,28 +167,24 @@ export default function DeployStrategyPage() {
   };
 
   const renderBrokerOptions = () => {
-    // Add Paper Trading option by default
-    const options = [
-      <SelectItem key="paper-trading" value="paper-trading">
-        Paper Trading (Simulation)
-      </SelectItem>
-    ];
-    
+    // If no brokers are available, return default paper trading options
     if (!brokerConnections || brokerConnections.length === 0) {
-      return options;
+      return [
+        <SelectItem key="paper-trading" value="paper-trading">
+          Paper Trading (Simulation)
+        </SelectItem>,
+      ];
     }
-
-    // Add all connected brokers
-    brokerConnections.forEach((connection) => {
-      options.push(
-        <SelectItem key={connection.id} value={connection.id.toString()}>
-          {connection.broker} ({connection.environment}) {connection.accountName ? `- ${connection.accountName}` : ''}
-        </SelectItem>
-      );
-    });
-    
-    return options;
+  
+    // If real brokers are available, map them
+    return brokerConnections.map((connection) => (
+      <SelectItem key={connection.id} value={connection.id.toString()}>
+        {connection.broker} ({connection.environment})
+        {connection.accountName ? ` - ${connection.accountName}` : ""}
+      </SelectItem>
+    ));
   };
+  
 
   return (
     <div className="container mx-auto p-6">
@@ -199,7 +223,7 @@ export default function DeployStrategyPage() {
                       <FormLabel>Strategy</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value || "sample-strategy-2"} // Default to BANKNIFTY Straddle strategy
+                        defaultValue={field.value} // Default to BANKNIFTY Straddle strategy
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -224,7 +248,7 @@ export default function DeployStrategyPage() {
                       <FormLabel>Broker</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value || "paper-trading"} // Default to Paper Trading
+                        defaultValue={field.value} // Default to Paper Trading
                       >
                         <FormControl>
                           <SelectTrigger>

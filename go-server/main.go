@@ -9,6 +9,7 @@ import (
 
 	"go-backend/handlers"
 	"go-backend/models"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -17,6 +18,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
+
+	mux := http.NewServeMux()
 
 	// Auto-migrate User model
 	db.AutoMigrate(&models.User{})
@@ -41,7 +44,7 @@ func main() {
 
 	h1 := &handlers.StrategyHandler{DB: db}
 
-	http.HandleFunc("/strategies", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/strategies", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			h1.GetStrategies(w, r)
 		} else if r.Method == http.MethodPost {
@@ -52,7 +55,7 @@ func main() {
 	})
 
 	// Handle /strategies/{id} crud operations
-	http.HandleFunc("/strategies/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/strategies/", func(w http.ResponseWriter, r *http.Request) {
 		// crude way to get method and id
 		switch r.Method {
 		case http.MethodGet:
@@ -253,7 +256,14 @@ func main() {
 		}
 	})
 
+	handler := cors.New(cors.Options{
+        AllowedOrigins:   []string{"http://localhost:5003"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+        AllowedHeaders:   []string{"Content-Type"},
+        AllowCredentials: true,
+    }).Handler(mux)
+
 	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", handler))
 
 }
