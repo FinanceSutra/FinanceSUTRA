@@ -697,9 +697,9 @@ const RiskManagement: React.FC = () => {
                 <CardTitle className="text-sm font-medium text-neutral-500">Current Drawdown</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatPercentage(portfolioRisk.drawdown.current)}</div>
+                {/* <div className="text-2xl font-bold">{formatPercentage(portfolioRisk.drawdown.current)}</div> */}
                 <div className="text-sm mt-1 text-neutral-500">
-                  Max: {formatPercentage(portfolioRisk.drawdown.max)}
+                  {/* Max: {formatPercentage(portfolioRisk.drawdown.max)} */}
                 </div>
               </CardContent>
             </Card>
@@ -755,7 +755,7 @@ const RiskManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <span className="text-sm font-medium mb-3 block">Market Exposure</span>
+                  {/* <span className="text-sm font-medium mb-3 block">Market Exposure</span>
                   <div className="space-y-2">
                     {portfolioRisk.exposureByMarket.map((item, index) => (
                       <div key={index}>
@@ -766,7 +766,7 @@ const RiskManagement: React.FC = () => {
                         <Progress value={item.percentage} className="h-1.5" />
                       </div>
                     ))}
-                  </div>
+                  </div> */}
                 </div>
 
                 <div>

@@ -17,7 +17,12 @@ import {
   Copy,
   ThumbsUp,
   ThumbsDown,
-  RefreshCw
+  RefreshCw,
+  Paperclip,
+  Globe,
+  Mic,
+  ArrowUp,
+  BarChart3
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -337,24 +342,52 @@ export default function ResearchPage() {
         {/* Input */}
         <div className="border-t bg-white/80 backdrop-blur-sm p-4">
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="flex gap-3">
+            <div className="flex items-center gap-3 bg-gray-800 rounded-xl px-4 py-3 border border-gray-700">
+              <button 
+                type="button"
+                className="text-gray-400 hover:text-gray-300 transition-colors p-1"
+                title="Attach file"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+              <button 
+                type="button"
+                className="text-gray-400 hover:text-gray-300 transition-colors p-1"
+                title="Web search"
+              >
+                <Globe className="w-5 h-5" />
+              </button>
               <div className="flex-1 relative">
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Ask about stocks, market trends, trading strategies..."
-                  className="pr-12 h-12 text-base"
+                  placeholder="Send a message..."
+                  className="bg-transparent border-none text-gray-200 placeholder:text-gray-400 h-auto py-2 px-0 focus:ring-0 focus:outline-none text-base"
                   disabled={researchMutation.isPending}
                 />
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="absolute right-1 top-1 h-10 w-10"
-                  disabled={!inputValue.trim() || researchMutation.isPending}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
               </div>
+              <button 
+                type="button"
+                className="text-gray-400 hover:text-gray-300 transition-colors p-1"
+                title="Voice input"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
+              <button 
+                type="button"
+                className="text-gray-400 hover:text-gray-300 transition-colors p-1"
+                title="Chart analysis"
+              >
+                <BarChart3 className="w-5 h-5" />
+              </button>
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-2 h-8 w-8 ml-2"
+                disabled={!inputValue.trim() || researchMutation.isPending}
+              >
+                <ArrowUp className="w-4 h-4" />
+              </Button>
             </div>
             <div className="text-xs text-muted-foreground mt-2 text-center">
               Research assistant can make mistakes. Please verify important information.
