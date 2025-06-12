@@ -31,7 +31,7 @@ const formSchema = z.object({
   strategyId: z.string().min(1, "Strategy is required"),
   brokerId: z.union([
     z.string().regex(/^\d+$/, "Broker must be numeric"),
-    z.literal("paper-trading")
+    z.literal("paper-trading-1")
   ]),
   
   name: z.string().min(3, "Name must be at least 3 characters").max(50, "Name must be less than 50 characters"),
@@ -111,7 +111,7 @@ export default function DeployStrategyPage() {
   });
 
   const deployStrategyMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/deployed-strategies', data),
+    mutationFn: (data: any) => apiRequest('POST', "http://localhost:8080/deploy-strategy", data),
     onSuccess: () => {
       toast({
         title: "Strategy Deployed",
@@ -131,13 +131,16 @@ export default function DeployStrategyPage() {
 
   const onSubmit = (data: FormValues) => {
     setIsDeploying(true);
-    
+    console.log("Data Incoming --> ");
+    console.dir(data);
     const formattedData = {
       ...data,
       strategyId: parseInt(data.strategyId),
-      brokerId: data.brokerId === "paper-trading" ? null : parseInt(data.brokerId),
+      brokerId: parseInt(data.brokerId),
     };
-
+    console.log("Data after --> ");
+    console.dir(formattedData);
+    
     deployStrategyMutation.mutate(formattedData);
   };
 
@@ -170,7 +173,7 @@ export default function DeployStrategyPage() {
     // If no brokers are available, return default paper trading options
     if (!brokerConnections || brokerConnections.length === 0) {
       return [
-        <SelectItem key="paper-trading" value="paper-trading">
+        <SelectItem key="1" value="1">
           Paper Trading (Simulation)
         </SelectItem>,
       ];

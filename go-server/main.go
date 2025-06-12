@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	dsn := "host=localhost user=postgres password='Daksh@2706' dbname=FinanceSutra port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password='Atharva2005%' dbname=FinanceSutra port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
@@ -26,7 +26,7 @@ func main() {
 
 	h := handlers.Handler{DB: db}
 
-	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
 			h.CreateUser(w, r)
@@ -37,7 +37,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/users/username/", h.GetUserByUsername)
+	mux.HandleFunc("/users/username/", h.GetUserByUsername)
 
 	// Automigrate strategies model
 	db.AutoMigrate(&models.Strategy{})
@@ -71,7 +71,7 @@ func main() {
 
 	h2 := &handlers.DeployStrategyHandler{DB: db}
 
-	http.HandleFunc("/deploy-strategy", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/deploy-strategy", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h2.GetDeployedStrategies(w, r)
@@ -81,25 +81,13 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		}
 	})
-
-	http.HandleFunc("/deploy-strategy/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h2.GetDeployedStrategy(w, r)
-		case http.MethodPut:
-			h2.UpdateDeployedStrategy(w, r)
-		default:
-			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
 	// Auto-migrate StrategyRecommendation model
 	db.AutoMigrate(&models.StrategyRecommendation{})
 
 	h3 := &handlers.StrategyRecommendationHandler{DB: db}
 
 	// Handle GET and POST /strategy-recommendations
-	http.HandleFunc("/strategy-recommendations", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/strategy-recommendations", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h3.GetAllRecommendations(w, r)
@@ -111,7 +99,7 @@ func main() {
 	})
 
 	// Handle GET and PUT /strategy-recommendations/{id}
-	http.HandleFunc("/strategy-recommendations/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/strategy-recommendations/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h3.GetRecommendationByID(w, r)
@@ -127,7 +115,7 @@ func main() {
 
 	h4 := &handlers.TradingWorkflowHandler{DB: db}
 
-	http.HandleFunc("/trading-workflows", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/trading-workflows", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h4.GetAll(w, r)
@@ -138,7 +126,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/trading-workflows/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/trading-workflows/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h4.GetByID(w, r)
@@ -154,7 +142,7 @@ func main() {
 
 	h5 := &handlers.WorkflowStepHandler{DB: db}
 
-	http.HandleFunc("/workflow-steps", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-steps", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h5.GetAll(w, r)
@@ -165,7 +153,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-steps/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-steps/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h5.GetByID(w, r)
@@ -181,7 +169,7 @@ func main() {
 
 	h6 := &handlers.WorkflowConditionHandler{DB: db}
 
-	http.HandleFunc("/workflow-conditions", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-conditions", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h6.GetAll(w, r)
@@ -192,7 +180,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-conditions/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-conditions/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h6.GetByID(w, r)
@@ -208,7 +196,7 @@ func main() {
 
 	h7 := &handlers.WorkflowActionHandler{DB: db}
 
-	http.HandleFunc("/workflow-actions", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-actions", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h7.GetWorkflowActions(w, r)
@@ -219,7 +207,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-actions/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-actions/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h7.GetWorkflowAction(w, r)
@@ -234,7 +222,7 @@ func main() {
 
 	h8 := &handlers.WorkflowExecutionLogHandler{DB: db}
 
-	http.HandleFunc("/workflow-execution-logs", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-execution-logs", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h8.GetLogs(w, r)
@@ -245,7 +233,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-execution-logs/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-execution-logs/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h8.GetLog(w, r)
