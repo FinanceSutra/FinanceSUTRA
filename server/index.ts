@@ -8,21 +8,41 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Session setup with memory store
-const SessionStore = MemoryStore(session);
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'trading-platform-secret',
-  cookie: {
-    maxAge: 86400000, // 24 hours
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  },
-  store: new SessionStore({
-    checkPeriod: 86400000 // prune expired entries every 24h
-  }),
-  resave: false,
-  saveUninitialized: false
+// // Session setup with memory store
+// const SessionStore = MemoryStore(session);
+// app.use(session({
+//   secret: process.env.SESSION_SECRET || 'trading-platform-secret',
+//   cookie: {
+//     maxAge: 86400000, // 24 hours
+//     secure: process.env.NODE_ENV === 'production',
+//     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+//   },
+//   store: new SessionStore({
+//     checkPeriod: 86400000 // prune expired entries every 24h
+//   }),
+//   resave: false,
+//   saveUninitialized: false
+// }));
+
+import cors from "cors";
+
+app.use(cors({
+  origin: "http://localhost:5003", // or wherever your frontend runs
+  credentials: true, // important
 }));
+
+app.use(session({
+  name: "Go-session-id",
+  secret: "your_secret_key",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false, // set to true in production with HTTPS
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
+  },
+}));
+
 
 // Add a basic health check endpoint
 app.get('/healthz', (req, res) => {

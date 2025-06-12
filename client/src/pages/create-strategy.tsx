@@ -137,17 +137,18 @@ const CreateStrategy: React.FC = () => {
     mutationFn: async (data: Partial<Strategy>) => {
       try {
         // Save to frontend API
-        const frontendResponse = await apiRequest('POST', '/api/strategies', data);
-        const frontendData = await frontendResponse.json();
-
+        // const frontendResponse = await apiRequest('POST', '/api/strategies', data);
+        // const frontendData = await frontendResponse.json();
+       
         try {
           // Save to backend API
+          console.dir(data);
           const backendResponse = await apiRequest('POST', 'http://localhost:8080/strategies', data);
           const backendData = await backendResponse.json();
 
           // Return both responses
           return {
-            frontend: frontendData,
+            // frontend: frontendData,
             backend: backendData,
             success: true
           };
@@ -155,7 +156,7 @@ const CreateStrategy: React.FC = () => {
           console.error('Backend save failed:', backendError);
           // If backend fails, still return frontend data but mark partial success
           return {
-            frontend: frontendData,
+            // frontend: frontendData,
             success: 'partial',
             error: 'Backend save failed'
           };

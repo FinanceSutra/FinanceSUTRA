@@ -10,10 +10,25 @@ import (
 	"go-backend/handlers"
 	"go-backend/models"
 	"github.com/rs/cors"
+	"github.com/gorilla/sessions"
+    "encoding/gob"
+    "github.com/google/uuid"
 )
 
 func main() {
-	dsn := "host=localhost user=postgres password='Atharva2005%' dbname=FinanceSutra port=5432 sslmode=disable"
+
+	gob.Register(uuid.UUID{})
+    store := sessions.NewCookieStore([]byte("your-very-secret-key"))
+        store.Options = &sessions.Options{
+	    Path:     "/",
+	    MaxAge:   86400 * 7, // 1 week
+	    HttpOnly: true,
+	    SameSite: http.SameSiteLaxMode,
+        Secure: false,
+
+    }
+
+	dsn := "host=localhost user=postgres password='Atharva2005%' dbname=AfterLogin port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
@@ -24,27 +39,51 @@ func main() {
 	// Auto-migrate User model
 	db.AutoMigrate(&models.User{})
 
-	h := handlers.Handler{DB: db}
+	h := handlers.Handler{
+        DB: db,
+        Store: store,
+    }
+    h0 := handlers.SettingsHandler{DB: db}
 
-	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "POST":
-			h.CreateUser(w, r)
-		case "GET":
-			h.GetUsers(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	mux.HandleFunc("/api/user", h.GetCurrentUser)
 
-	mux.HandleFunc("/users/username/", h.GetUserByUsername)
+    mux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+        switch r.Method {
+        case "POST":
+            h.Register(w, r)
+        case "GET":
+            h.GetUsers(w, r)
+        default:
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
+    mux.HandleFunc("/login", h.LoginUser);
+	
+	mux.HandleFunc("/user/settings", func(w http.ResponseWriter, r *http.Request){
+        if r.Method == http.MethodPut{
+            h0.StoreNotiPref(w,r)
+        } else if r.Method == http.MethodPost{
+            h0.StoreUserPreferences(w,r)
+        }
+    } )
 
 	// Automigrate strategies model
-	db.AutoMigrate(&models.Strategy{})
 
-	h1 := &handlers.StrategyHandler{DB: db}
+    db.AutoMigrate(&models.Strategy{})
+
+	h1 := &handlers.StrategyHandler{DB: db,
+	 Store: store,}
 
 	mux.HandleFunc("/strategies", func(w http.ResponseWriter, r *http.Request) {
+
+		session, _ := store.Get(r, "Go-session-id")
+	   _, ok := session.Values["user_id"]
+	   if !ok {
+	    	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	    	return
+	   }
+
 		if r.Method == http.MethodGet {
 			h1.GetStrategies(w, r)
 		} else if r.Method == http.MethodPost {
@@ -246,7 +285,7 @@ func main() {
 
 	handler := cors.New(cors.Options{
         AllowedOrigins:   []string{"http://localhost:5003"},
-        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
         AllowedHeaders:   []string{"Content-Type"},
         AllowCredentials: true,
     }).Handler(mux)

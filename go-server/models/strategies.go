@@ -6,7 +6,7 @@ import (
 )
 
 type Strategy struct {
-	ID          uint      `json:"id" gorm:"primaryKey;autoIncrement"`
+	ID uuid.UUID `json:"id" gorm:"type:uuid;primaryKey"`
 	UserID      uuid.UUID `gorm:"type:uuid;not null"`   // Foreign key to User
     Name        string    `gorm:"not null"`
     Description string

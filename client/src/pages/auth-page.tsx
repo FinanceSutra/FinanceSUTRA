@@ -10,6 +10,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useLocation } from "wouter";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -48,8 +49,14 @@ export default function AuthPage() {
     },
   });
 
+  const [, setLocation] = useLocation();
+
   const onLoginSubmit = (values: LoginFormValues) => {
-    loginMutation.mutate(values);
+  loginMutation.mutate(values, {
+    onSuccess: () => {
+      setLocation("/"); // ✅ redirect after successful login
+      },
+    });
   };
 
   const onRegisterSubmit = (values: RegisterFormValues) => {
