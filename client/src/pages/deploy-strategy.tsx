@@ -134,7 +134,7 @@ export default function DeployStrategyPage() {
     console.log("Data Incoming --> ");
     console.dir(data);
     const formattedData = {
-      ...data,
+      ...data,      
       strategyId: parseInt(data.strategyId),
       brokerId: parseInt(data.brokerId),
     };
