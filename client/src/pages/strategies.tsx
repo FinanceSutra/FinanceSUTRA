@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { Plus, Pencil, Trash2, Play, Pause, Info } from 'lucide-react';
+import { Plus, Pencil, Trash2, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -28,25 +28,20 @@ const Strategies: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
 
-  // Fetch strategies
-  const { data: strategies, isLoading } = useQuery({
+  const { data: strategies, isLoading, error } = useQuery({
     queryKey: ['strategies'],
-    staleTime: 60000, // 1 minute
+    queryFn: async () => {
+      const res = await fetch('http://localhost:8080/strategies', {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch strategies');
+      const json = await res.json();
+      console.log("Fetched strategies:", json); // Debug
+      return json;
+    },
+    staleTime: 60000,
   });
 
-  // const { data: strategies, isLoading, error } = useQuery({
-  //   queryKey: ['strategies'],
-  //   queryFn: async () => {
-  //     const res = await fetch('http://localhost:8080/strategies', {
-  //       credentials: 'include',
-  //     });
-  //     if (!res.ok) throw new Error('Failed to fetch strategies');
-  //     return res.json();
-  //   },
-  //   staleTime: 60000,
-  // });
-
-  // Create delete strategy mutation
   const deleteStrategyMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest('DELETE', `/api/strategies/${id}`);
@@ -56,7 +51,7 @@ const Strategies: React.FC = () => {
         title: "Strategy deleted",
         description: "The strategy has been successfully deleted",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/strategies'] });
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
       setSelectedStrategy(null);
     },
     onError: (error) => {
@@ -68,7 +63,6 @@ const Strategies: React.FC = () => {
     },
   });
 
-  // Create toggle strategy active status mutation
   const toggleStrategyMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
       await apiRequest('PUT', `/api/strategies/${id}`, { isActive });
@@ -78,7 +72,7 @@ const Strategies: React.FC = () => {
         title: "Strategy updated",
         description: "The strategy status has been updated",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/strategies'] });
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
     },
     onError: (error) => {
       toast({
@@ -89,23 +83,21 @@ const Strategies: React.FC = () => {
     },
   });
 
-  // Filter strategies based on search term
   const filteredStrategies = strategies
     ? strategies.filter((strategy: Strategy) => {
+        const search = searchTerm.toLowerCase();
         return (
-          strategy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          strategy.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          strategy.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+          (strategy.name?.toLowerCase() ?? '').includes(search) ||
+          (strategy.description?.toLowerCase() ?? '').includes(search) ||
+          (strategy.symbol?.toLowerCase() ?? '').includes(search)
         );
       })
     : [];
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  // Handle toggle strategy active status
   const handleToggleActive = (strategy: Strategy) => {
     toggleStrategyMutation.mutate({
       id: strategy.id,
@@ -113,7 +105,6 @@ const Strategies: React.FC = () => {
     });
   };
 
-  // Render loading state
   if (isLoading) {
     return (
       <div className="py-6 px-4 sm:px-6 lg:px-8 mt-14 lg:mt-0">
@@ -138,7 +129,6 @@ const Strategies: React.FC = () => {
 
   return (
     <div className="py-6 px-4 sm:px-6 lg:px-8 mt-14 lg:mt-0">
-      {/* Header */}
       <Header 
         title="Strategies"
         description="Manage your trading strategies"
@@ -152,7 +142,6 @@ const Strategies: React.FC = () => {
         }
       />
 
-      {/* Search and filter */}
       <div className="my-6">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -180,7 +169,6 @@ const Strategies: React.FC = () => {
         </div>
       </div>
 
-      {/* Strategy list */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredStrategies.length > 0 ? (
           filteredStrategies.map((strategy: Strategy) => (
@@ -245,11 +233,15 @@ const Strategies: React.FC = () => {
                 <div className="mt-4 pt-4 border-t border-neutral-200">
                   <div className="flex justify-between text-sm">
                     <span className="text-neutral-500">Created</span>
-                    <time className="text-neutral-700">{new Date(strategy.createdAt).toLocaleDateString()}</time>
+                    <time className="text-neutral-700">
+                      {strategy.createdAt ? new Date(strategy.createdAt).toLocaleDateString() : 'N/A'}
+                    </time>
                   </div>
                   <div className="flex justify-between mt-2 text-sm">
                     <span className="text-neutral-500">Last updated</span>
-                    <time className="text-neutral-700">{new Date(strategy.updatedAt).toLocaleDateString()}</time>
+                    <time className="text-neutral-700">
+                      {strategy.updatedAt ? new Date(strategy.updatedAt).toLocaleDateString() : 'N/A'}
+                    </time>
                   </div>
                 </div>
               </CardContent>
@@ -282,3 +274,4 @@ const Strategies: React.FC = () => {
 };
 
 export default Strategies;
+
