@@ -6,6 +6,8 @@ import {
 } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+
 
 type User = {
   id: number;
@@ -49,19 +51,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isLoading,
   } = useQuery<User | null, Error>({
-    queryKey: ["/api/user"],
+    queryKey: ["http://localhost:8080/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
+      const res = await apiRequest("POST", "http://localhost:8080/login", credentials);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
       return data;
     },
     onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["http://localhost:8080/api/user"], user);
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
@@ -78,13 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/register", userData);
+      const res = await apiRequest("POST", "http://localhost:8080/register", userData);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Registration failed");
       return data;
     },
     onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
+      queryClient.setQueryData(["http://localhost:8080/api/user"], user);
       toast({
         title: "Registration successful",
         description: `Welcome, ${user.username}!`,
@@ -108,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
+      queryClient.setQueryData(["http://localhost:8080/api/user"], null);
       toast({
         title: "Logged out",
         description: "You have been logged out successfully",

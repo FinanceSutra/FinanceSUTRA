@@ -30,9 +30,21 @@ const Strategies: React.FC = () => {
 
   // Fetch strategies
   const { data: strategies, isLoading } = useQuery({
-    queryKey: ['/api/strategies'],
+    queryKey: ['strategies'],
     staleTime: 60000, // 1 minute
   });
+
+  // const { data: strategies, isLoading, error } = useQuery({
+  //   queryKey: ['strategies'],
+  //   queryFn: async () => {
+  //     const res = await fetch('http://localhost:8080/strategies', {
+  //       credentials: 'include',
+  //     });
+  //     if (!res.ok) throw new Error('Failed to fetch strategies');
+  //     return res.json();
+  //   },
+  //   staleTime: 60000,
+  // });
 
   // Create delete strategy mutation
   const deleteStrategyMutation = useMutation({

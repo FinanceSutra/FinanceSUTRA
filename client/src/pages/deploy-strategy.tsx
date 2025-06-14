@@ -29,11 +29,10 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   strategyId: z.string().min(1, "Strategy is required"),
-  brokerId: z.string().min(1, "Strategy is required"),
-  // brokerId: z.union([
-  //   z.string().regex(/^\d+$/, "Broker must be numeric"),
-  //   z.literal("paper-trading-1")
-  // ]),
+  brokerId: z.union([
+    z.string().regex(/^\d+$/, "Broker must be numeric"),
+    z.literal("paper-trading-1")
+  ]),
   
   name: z.string().min(3, "Name must be at least 3 characters").max(50, "Name must be less than 50 characters"),
   lotMultiplier: z.string().regex(/^\d+(\.\d+)?$/, "Must be a valid number"),
@@ -112,7 +111,7 @@ export default function DeployStrategyPage() {
   });
 
   const deployStrategyMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', 'http://localhost:8080/deploy-strategy', data),
+    mutationFn: (data: any) => apiRequest('POST', "http://localhost:8080/deploy-strategy", data),
     onSuccess: () => {
       toast({
         title: "Strategy Deployed",
@@ -132,14 +131,16 @@ export default function DeployStrategyPage() {
 
   const onSubmit = (data: FormValues) => {
     setIsDeploying(true);
-    console.log(data);
-
+    console.log("Data Incoming --> ");
+    console.dir(data);
     const formattedData = {
       ...data,      
       strategyId: parseInt(data.strategyId),
       brokerId: parseInt(data.brokerId),
     };
-
+    console.log("Data after --> ");
+    console.dir(formattedData);
+    
     deployStrategyMutation.mutate(formattedData);
   };
 

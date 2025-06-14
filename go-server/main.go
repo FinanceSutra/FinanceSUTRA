@@ -10,13 +10,68 @@ import (
 	"go-backend/handlers"
 	"go-backend/models"
 	"github.com/rs/cors"
+	"github.com/gorilla/sessions"
+    "encoding/gob"
+    "github.com/google/uuid"
+	"os"
+	"fmt"
+	"time"
 )
 
+func connectWithRetry(dsn string, maxRetries int, delaySec int) (*gorm.DB, error) {
+	var db *gorm.DB
+	var err error
+
+	for i := 1; i <= maxRetries; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			sqlDB, err := db.DB()
+			if err == nil {
+				err = sqlDB.Ping()
+				if err == nil {
+					log.Println("✅ Successfully connected to database.")
+					return db, nil
+				}
+			}
+		}
+
+		log.Printf("Failed to connect to database (attempt %d/%d): %v", i, maxRetries, err)
+		time.Sleep(time.Duration(delaySec) * time.Second)
+	}
+
+	return nil, fmt.Errorf("Could not connect to database after %d attempts: %w", maxRetries, err)
+}
+
+
 func main() {
-	dsn := "host=localhost user=postgres password='Daksh@2706' dbname=FinanceSutra port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	dbHost := os.Getenv("DB_HOST")
+    dbPort := os.Getenv("DB_PORT")
+    dbUser := os.Getenv("DB_USER")
+    dbPassword := os.Getenv("DB_PASSWORD")
+    dbName := os.Getenv("DB_NAME")
+
+    dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+    dbHost, dbPort, dbUser, dbPassword, dbName)
+
+	gob.Register(uuid.UUID{})
+    store := sessions.NewCookieStore([]byte("your-very-secret-key"))
+        store.Options = &sessions.Options{
+	    Path:     "/",
+	    MaxAge:   86400 * 7, // 1 week
+	    HttpOnly: true,
+	    SameSite: http.SameSiteLaxMode,
+        Secure: false,
+
+    }
+
+	// dsn := "host=localhost user=postgres password='Atharva2005%' dbname=AfterLogin port=5432 sslmode=disable"
+	// db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// if err != nil {
+	// 	log.Fatal("Failed to connect to database:", err)
+	// }
+	db, err := connectWithRetry(dsn, 10, 2)
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Fatal(err)
 	}
 
 	mux := http.NewServeMux()
@@ -24,27 +79,51 @@ func main() {
 	// Auto-migrate User model
 	db.AutoMigrate(&models.User{})
 
-	h := handlers.Handler{DB: db}
+	h := handlers.Handler{
+        DB: db,
+        Store: store,
+    }
+    h0 := handlers.SettingsHandler{DB: db}
 
-	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "POST":
-			h.CreateUser(w, r)
-		case "GET":
-			h.GetUsers(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	mux.HandleFunc("/api/user", h.GetCurrentUser)
 
-	http.HandleFunc("/users/username/", h.GetUserByUsername)
+    mux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+        switch r.Method {
+        case "POST":
+            h.Register(w, r)
+        case "GET":
+            h.GetUsers(w, r)
+        default:
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        }
+    })
+
+    mux.HandleFunc("/login", h.LoginUser);
+	
+	mux.HandleFunc("/user/settings", func(w http.ResponseWriter, r *http.Request){
+        if r.Method == http.MethodPut{
+            h0.StoreNotiPref(w,r)
+        } else if r.Method == http.MethodPost{
+            h0.StoreUserPreferences(w,r)
+        }
+    } )
 
 	// Automigrate strategies model
-	db.AutoMigrate(&models.Strategy{})
 
-	h1 := &handlers.StrategyHandler{DB: db}
+    db.AutoMigrate(&models.Strategy{})
+
+	h1 := &handlers.StrategyHandler{DB: db,
+	 Store: store,}
 
 	mux.HandleFunc("/strategies", func(w http.ResponseWriter, r *http.Request) {
+
+		session, _ := store.Get(r, "Go-session-id")
+	   _, ok := session.Values["user_id"]
+	   if !ok {
+	    	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	    	return
+	   }
+
 		if r.Method == http.MethodGet {
 			h1.GetStrategies(w, r)
 		} else if r.Method == http.MethodPost {
@@ -81,25 +160,13 @@ func main() {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		}
 	})
-
-	mux.HandleFunc("/deploy-strategy/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			h2.GetDeployedStrategy(w, r)
-		case http.MethodPut:
-			h2.UpdateDeployedStrategy(w, r)
-		default:
-			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
 	// Auto-migrate StrategyRecommendation model
 	db.AutoMigrate(&models.StrategyRecommendation{})
 
 	h3 := &handlers.StrategyRecommendationHandler{DB: db}
 
 	// Handle GET and POST /strategy-recommendations
-	http.HandleFunc("/strategy-recommendations", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/strategy-recommendations", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h3.GetAllRecommendations(w, r)
@@ -111,7 +178,7 @@ func main() {
 	})
 
 	// Handle GET and PUT /strategy-recommendations/{id}
-	http.HandleFunc("/strategy-recommendations/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/strategy-recommendations/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h3.GetRecommendationByID(w, r)
@@ -127,7 +194,7 @@ func main() {
 
 	h4 := &handlers.TradingWorkflowHandler{DB: db}
 
-	http.HandleFunc("/trading-workflows", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/trading-workflows", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h4.GetAll(w, r)
@@ -138,7 +205,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/trading-workflows/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/trading-workflows/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h4.GetByID(w, r)
@@ -154,7 +221,7 @@ func main() {
 
 	h5 := &handlers.WorkflowStepHandler{DB: db}
 
-	http.HandleFunc("/workflow-steps", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-steps", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h5.GetAll(w, r)
@@ -165,7 +232,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-steps/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-steps/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h5.GetByID(w, r)
@@ -181,7 +248,7 @@ func main() {
 
 	h6 := &handlers.WorkflowConditionHandler{DB: db}
 
-	http.HandleFunc("/workflow-conditions", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-conditions", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h6.GetAll(w, r)
@@ -192,7 +259,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-conditions/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-conditions/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h6.GetByID(w, r)
@@ -208,7 +275,7 @@ func main() {
 
 	h7 := &handlers.WorkflowActionHandler{DB: db}
 
-	http.HandleFunc("/workflow-actions", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-actions", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h7.GetWorkflowActions(w, r)
@@ -219,7 +286,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-actions/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-actions/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h7.GetWorkflowAction(w, r)
@@ -234,7 +301,7 @@ func main() {
 
 	h8 := &handlers.WorkflowExecutionLogHandler{DB: db}
 
-	http.HandleFunc("/workflow-execution-logs", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-execution-logs", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h8.GetLogs(w, r)
@@ -245,7 +312,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/workflow-execution-logs/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/workflow-execution-logs/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h8.GetLog(w, r)
@@ -258,7 +325,7 @@ func main() {
 
 	handler := cors.New(cors.Options{
         AllowedOrigins:   []string{"http://localhost:5003"},
-        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
         AllowedHeaders:   []string{"Content-Type"},
         AllowCredentials: true,
     }).Handler(mux)

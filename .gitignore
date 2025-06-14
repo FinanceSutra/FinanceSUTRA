@@ -6,3 +6,6 @@ vite.config.ts.*
 *.tar.gz
 # Ignore Air's temporary build folder
 /tmp/
+pgdata/
+node_modules/
+*.log

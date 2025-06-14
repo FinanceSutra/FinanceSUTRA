@@ -247,156 +247,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Now using the real implementation from './utils/marketData'
   
   // Auth routes
-  app.post('/api/register', async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
+  // app.post('/api/register', async (req, res) => {
+  //   try {
+  //     const userData = insertUserSchema.parse(req.body);
       
-      // Check if username or email already exists
-      const existingUserByUsername = await storage.getUserByUsername(userData.username);
-      if (existingUserByUsername) {
-        return res.status(400).json({ message: 'Username already exists' });
-      }
+  //     // Check if username or email already exists
+  //     const existingUserByUsername = await storage.getUserByUsername(userData.username);
+  //     if (existingUserByUsername) {
+  //       return res.status(400).json({ message: 'Username already exists' });
+  //     }
       
-      const existingUserByEmail = await storage.getUserByEmail(userData.email);
-      if (existingUserByEmail) {
-        return res.status(400).json({ message: 'Email already exists' });
-      }
+  //     const existingUserByEmail = await storage.getUserByEmail(userData.email);
+  //     if (existingUserByEmail) {
+  //       return res.status(400).json({ message: 'Email already exists' });
+  //     }
       
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(userData.password, salt);
+  //     // Hash password
+  //     const salt = await bcrypt.genSalt(10);
+  //     const hashedPassword = await bcrypt.hash(userData.password, salt);
       
-      // Create user
-      const user = await storage.createUser({
-        ...userData,
-        password: hashedPassword
-      });
+  //     // Create user
+  //     const user = await storage.createUser({
+  //       ...userData,
+  //       password: hashedPassword
+  //     });
       
-      // Set session
-      req.session.userId = user.id;
+  //     // Set session
+  //     req.session.userId = user.id;
       
-      // Return user without password
-      const { password, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: error.errors[0].message });
-      } else {
-        res.status(500).json({ message: 'Server error' });
-      }
-    }
-  });
+  //     // Return user without password
+  //     const { password, ...userWithoutPassword } = user;
+  //     res.status(201).json(userWithoutPassword);
+  //   } catch (error) {
+  //     if (error instanceof z.ZodError) {
+  //       res.status(400).json({ message: error.errors[0].message });
+  //     } else {
+  //       res.status(500).json({ message: 'Server error' });
+  //     }
+  //   }
+  // });
   
-  app.post('/api/login', async (req, res) => {
-    try {
-      const { username, password } = req.body;
+  // app.post('/api/login', async (req, res) => {
+  //   try {
+  //     const { username, password } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
-      }
+  //     if (!username || !password) {
+  //       return res.status(400).json({ message: 'Username and password are required' });
+  //     }
       
-      // Special test user for development - ALWAYS authenticates with these credentials
-      if (username === 'test' && password === 'testpassword') {
-        console.log("Authenticating test user...");
+  //     // Special test user for development - ALWAYS authenticates with these credentials
+  //     if (username === 'test' && password === 'testpassword') {
+  //       console.log("Authenticating test user...");
         
-        // Create a hardcoded test user
-        const testUser = {
-          id: 9999,
-          username: 'test',
-          email: 'test@example.com',
-          fullName: 'Test User',
-          createdAt: new Date(),
-          stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          subscriptionStatus: 'free',
-          plan: 'free'
-        };
+  //       // Create a hardcoded test user
+  //       const testUser = {
+  //         id: 9999,
+  //         username: 'test',
+  //         email: 'test@example.com',
+  //         fullName: 'Test User',
+  //         createdAt: new Date(),
+  //         stripeCustomerId: null,
+  //         stripeSubscriptionId: null,
+  //         subscriptionStatus: 'free',
+  //         plan: 'free'
+  //       };
         
-        // Set session
-        req.session.userId = testUser.id;
-        req.session.save((err) => {
-          if (err) {
-            console.error("Error saving session:", err);
-            return res.status(500).json({ message: 'Session error' });
-          }
-          console.log("Test user session saved successfully");
-          return res.json(testUser);
-        });
+  //       // Set session
+  //       req.session.userId = testUser.id;
+  //       req.session.save((err) => {
+  //         if (err) {
+  //           console.error("Error saving session:", err);
+  //           return res.status(500).json({ message: 'Session error' });
+  //         }
+  //         console.log("Test user session saved successfully");
+  //         return res.json(testUser);
+  //       });
         
-        return; // Exit here to avoid double response
-      }
+  //       return; // Exit here to avoid double response
+  //     }
       
-      // Normal authentication flow
-      const user = await storage.getUserByUsername(username);
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
+  //     // Normal authentication flow
+  //     const user = await storage.getUserByUsername(username);
+  //     if (!user) {
+  //       return res.status(401).json({ message: 'Invalid credentials' });
+  //     }
       
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
+  //     const isMatch = await bcrypt.compare(password, user.password);
+  //     if (!isMatch) {
+  //       return res.status(401).json({ message: 'Invalid credentials' });
+  //     }
       
-      // Set session
-      req.session.userId = user.id;
+  //     // Set session
+  //     req.session.userId = user.id;
       
-      // Return user without password
-      const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  });
+  //     // Return user without password
+  //     const { password: _, ...userWithoutPassword } = user;
+  //     res.json(userWithoutPassword);
+  //   } catch (error) {
+  //     console.error("Login error:", error);
+  //     res.status(500).json({ message: 'Server error' });
+  //   }
+  // });
   
-  app.post('/api/logout', (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: 'Failed to logout' });
-      }
-      res.json({ message: 'Logout successful' });
-    });
-  });
+  // app.post('/api/logout', (req, res) => {
+  //   req.session.destroy((err) => {
+  //     if (err) {
+  //       return res.status(500).json({ message: 'Failed to logout' });
+  //     }
+  //     res.json({ message: 'Logout successful' });
+  //   });
+  // });
   
-  // User routes
-  app.get('/api/user', async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
+  // // User routes
+  // app.get('/api/user', async (req, res) => {
+  //   if (!req.session.userId) {
+  //     return res.status(401).json({ message: 'Not authenticated' });
+  //   }
     
-    try {
-      // Special handling for test user
-      if (req.session.userId === 9999) {
-        console.log("Getting test user profile");
-        // Return hardcoded test user
-        const testUser = {
-          id: 9999,
-          username: 'test',
-          email: 'test@example.com',
-          fullName: 'Test User',
-          createdAt: new Date(),
-          stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          subscriptionStatus: 'free',
-          plan: 'free'
-        };
-        return res.json(testUser);
-      }
+  //   try {
+  //     // Special handling for test user
+  //     if (req.session.userId === 9999) {
+  //       console.log("Getting test user profile");
+  //       // Return hardcoded test user
+  //       const testUser = {
+  //         id: 9999,
+  //         username: 'test',
+  //         email: 'test@example.com',
+  //         fullName: 'Test User',
+  //         createdAt: new Date(),
+  //         stripeCustomerId: null,
+  //         stripeSubscriptionId: null,
+  //         subscriptionStatus: 'free',
+  //         plan: 'free'
+  //       };
+  //       return res.json(testUser);
+  //     }
       
-      // Regular user flow
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
+  //     // Regular user flow
+  //     const user = await storage.getUser(req.session.userId);
+  //     if (!user) {
+  //       return res.status(404).json({ message: 'User not found' });
+  //     }
       
-      // Return user without password
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Error getting user:", error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  });
+  //     // Return user without password
+  //     const { password, ...userWithoutPassword } = user;
+  //     res.json(userWithoutPassword);
+  //   } catch (error) {
+  //     console.error("Error getting user:", error);
+  //     res.status(500).json({ message: 'Server error' });
+  //   }
+  // });
   
   // Strategy routes
   app.get('/api/strategies', async (req, res) => {
