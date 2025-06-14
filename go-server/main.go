@@ -71,7 +71,7 @@ func main() {
 
 	h2 := &handlers.DeployStrategyHandler{DB: db}
 
-	http.HandleFunc("/deploy-strategy", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/deploy-strategy", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h2.GetDeployedStrategies(w, r)
@@ -82,7 +82,7 @@ func main() {
 		}
 	})
 
-	http.HandleFunc("/deploy-strategy/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/deploy-strategy/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			h2.GetDeployedStrategy(w, r)

@@ -12,8 +12,8 @@ type DeployedStrategy struct {
     UserID          uuid.UUID `gorm:"type:uuid;not null"`
     BrokerID        uint      `gorm:"not null"`
     Name            string    `gorm:"not null"`
-    LotMultiplier   float64
-    CapitalDeployed float64
+    LotMultiplier   string
+    CapitalDeployed string
     TradingType     string
     Status          string
     CurrentPnl      float64
