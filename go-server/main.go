@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/sessions"
     "encoding/gob"
     "github.com/google/uuid"
-	"os"
+	// "os"
 	"fmt"
 	"time"
 )
@@ -44,14 +44,14 @@ func connectWithRetry(dsn string, maxRetries int, delaySec int) (*gorm.DB, error
 
 
 func main() {
-	dbHost := os.Getenv("DB_HOST")
-    dbPort := os.Getenv("DB_PORT")
-    dbUser := os.Getenv("DB_USER")
-    dbPassword := os.Getenv("DB_PASSWORD")
-    dbName := os.Getenv("DB_NAME")
+	// dbHost := os.Getenv("DB_HOST")
+    // dbPort := os.Getenv("DB_PORT")
+    // dbUser := os.Getenv("DB_USER")
+    // dbPassword := os.Getenv("DB_PASSWORD")
+    // dbName := os.Getenv("DB_NAME")
 
-    dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-    dbHost, dbPort, dbUser, dbPassword, dbName)
+    // dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+    // dbHost, dbPort, dbUser, dbPassword, dbName)
 
 	gob.Register(uuid.UUID{})
     store := sessions.NewCookieStore([]byte("your-very-secret-key"))
@@ -67,12 +67,8 @@ func main() {
 	// dsn := "host=localhost user=postgres password='Daksh@2706' dbname=FinanceSutra port=5432 sslmode=disable"
 	// db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	// if err != nil {
-	// 	log.Fatal("Failed to connect to database:", err)
+	// 	log.Fatal(err)
 	// }
-	db, err := connectWithRetry(dsn, 10, 2)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	mux := http.NewServeMux()
 
