@@ -82,8 +82,21 @@ const SettingsPage: React.FC = () => {
   });
   
   // Fetch user data
-  const { data: user, isLoading: loadingUser } = useQuery({
-    queryKey: ['/api/user'],
+  // const { data: user, isLoading: loadingUser } = useQuery({
+  //   queryKey: ['/api/user'],
+  // });
+   const { data: user, isLoading: isLoadingUser, error: userError } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const res = await fetch('http://localhost:8080/api/user', {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch user info');
+      const data = await res.json();
+      console.log(data);
+      return data;
+    },
+    staleTime: 60000,
   });
   
   // Update profile data when user data is loaded
@@ -146,7 +159,8 @@ const SettingsPage: React.FC = () => {
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('PUT', '/api/user/settings', data);
+      console.dir(data);
+      return apiRequest('PUT', 'http://localhost:8080/user/settings', data);
     },
     onSuccess: () => {
       toast({
@@ -162,6 +176,25 @@ const SettingsPage: React.FC = () => {
       });
     },
   });
+
+  const updateApplicationsMutation = useMutation({
+    mutationFn: async (data : any) => {
+      return apiRequest("PUT", 'http://localhost:8080/user/preferences', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Settings updated",
+        description: 'Your application settings have been updated',
+      })
+    },
+    onError: (error) => {
+      toast({
+        title: 'Update failed',
+        description: `Error: ${error}`,
+        variant: 'destructive',
+      });
+    },
+  })
   
   // Handle profile form submission
   const handleProfileSubmit = (e: React.FormEvent) => {
@@ -218,6 +251,10 @@ const SettingsPage: React.FC = () => {
   const handleSaveSettings = () => {
     updateSettingsMutation.mutate(settings);
   };
+
+  const handlePreferenceSettings = () =>{
+    updateApplicationsMutation.mutate(settings);
+  }
   
   // Handle API key request
   const handleRequestApiKey = () => {
@@ -227,7 +264,7 @@ const SettingsPage: React.FC = () => {
     });
   };
   
-  if (loadingUser) {
+  if (isLoadingUser) {
     return (
       <div className="py-6 px-4 sm:px-6 lg:px-8 mt-14 lg:mt-0">
         <div className="flex justify-center items-center h-64">
@@ -544,9 +581,7 @@ const SettingsPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Email Notifications</h3>
-                
+              <div className="space-y-4">              
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="email-notifications">Email Notifications</Label>
@@ -805,7 +840,7 @@ const SettingsPage: React.FC = () => {
             </CardContent>
             <CardFooter>
               <Button 
-                onClick={handleSaveSettings}
+                onClick={handlePreferenceSettings}
                 disabled={updateSettingsMutation.isPending}
               >
                 {updateSettingsMutation.isPending ? (

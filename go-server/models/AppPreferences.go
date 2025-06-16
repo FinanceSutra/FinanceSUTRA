@@ -23,6 +23,7 @@ type AppPreferences struct {
     CacheHistoricalData bool   `gorm:"default:true"`                          // Cache local historical data
     DownloadFrequency   string `gorm:"type:varchar(20);default:'Daily'"`      // e.g., "Daily", "Hourly"
     RetentionPeriodDays int    `gorm:"default:90"`                            // Data retention in days
+    
 
     CreatedAt time.Time
     UpdatedAt time.Time

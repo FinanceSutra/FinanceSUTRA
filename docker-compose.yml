@@ -46,6 +46,9 @@ services:
       - "5050:80"
     depends_on:
       - db
+    volumes:
+    - pgadmin-data:/var/lib/pgadmin  # ← this is what persists settings
 
 volumes:
   pgdata:
+  pgadmin-data:
