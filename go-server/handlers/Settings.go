@@ -6,16 +6,20 @@ import (
     "net/http"
     "time"
 	"errors"
-    "fmt"
+    // "fmt"
 
     "github.com/google/uuid"
     "go-backend/models"
     "gorm.io/gorm"
+	"github.com/gorilla/sessions"
+
 )
 
 type SettingsHandler struct {
-    DB *gorm.DB
+    DB    *gorm.DB
+    Store *sessions.CookieStore // Add this line
 }
+
 
 // Request body structure
 type NotificationPrefInput struct {
@@ -27,7 +31,19 @@ type NotificationPrefInput struct {
 }
 
 func (h *SettingsHandler) StoreNotiPref(w http.ResponseWriter, r *http.Request) {
-    var input NotificationPrefInput
+    session, err := h.Store.Get(r, "Go-session-id")
+    if err != nil {
+        http.Error(w, "Failed to retrieve session", http.StatusInternalServerError)
+        return
+    }
+
+    userID, ok := session.Values["user_id"].(string)
+    if !ok || userID == "" {
+        http.Error(w, "Unauthorized: No user ID in session", http.StatusUnauthorized)
+        return
+    }
+
+    var input models.NotificationPreferences
 
     // Parse JSON body
     if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -35,25 +51,22 @@ func (h *SettingsHandler) StoreNotiPref(w http.ResponseWriter, r *http.Request) 
         return
     }
 
-    fmt.Println(input)
-
-    // Check if user exists
+    // Lookup user to confirm existence (optional)
     var user models.User
-    // fmt.Println("I am here")
-    if err := h.DB.First(&user, "id = ?", input.UserID).Error; err != nil {
+    if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
         http.Error(w, "User not found", http.StatusNotFound)
         return
     }
 
-    // Check if preferences already exist for user
+    // Check if preferences already exist
     var prefs models.NotificationPreferences
-    result := h.DB.Where("user_id = ?", input.UserID).First(&prefs)
+    result := h.DB.Where("user_id = ?", userID).First(&prefs)
 
     if result.Error == gorm.ErrRecordNotFound {
         // Create new preferences
         prefs = models.NotificationPreferences{
             ID:                 uuid.New(),
-            UserID:             input.UserID,
+            UserID:             uuid.MustParse(userID),
             EmailNotifications: input.EmailNotifications,
             TradingAlerts:      input.TradingAlerts,
             MarketUpdates:      input.MarketUpdates,
@@ -86,33 +99,84 @@ func (h *SettingsHandler) StoreNotiPref(w http.ResponseWriter, r *http.Request) 
     w.Write([]byte("Notification preferences saved successfully"))
 }
 
-func (h *SettingsHandler) StoreUserPreferences(w http.ResponseWriter, r *http.Request) {
-	var input models.AppPreferences
+func parseRetentionPeriod(s string) int {
+	switch s {
+	case "30d":
+		return 30
+	case "90d":
+		return 90
+	case "180d":
+		return 180
+	case "1y":
+		return 365
+	case "unlimited":
+		return -1
+	default:
+		return 90
+	}
+}
 
-	// Parse JSON body
+type AppPreferencesInput struct {
+	Theme               string `json:"theme"`
+	ChartStyle          string `json:"chartStyle"`
+	ShowTradingVolume   bool   `json:"showTradingVolume"`
+	DefaultTimeframe    string `json:"defaultTimeframe"`
+	AutoRefreshData     bool   `json:"autoRefreshData"`
+	CacheHistoricalData bool   `json:"cacheHistoricalData"`
+	DownloadFrequency   string `json:"downloadFrequency"`
+	DataRetentionPeriod string `json:"dataRetentionPeriod"` // e.g. "90d"
+}
+
+func (h *SettingsHandler) StoreUserPreferences(w http.ResponseWriter, r *http.Request) {
+	session, err := h.Store.Get(r, "Go-session-id")
+	if err != nil {
+		http.Error(w, "Failed to retrieve session", http.StatusInternalServerError)
+		return
+	}
+
+	// Securely extract user ID from session
+	userIDStr, ok := session.Values["user_id"].(string)
+	if !ok || userIDStr == "" {
+		http.Error(w, "Unauthorized: No user ID in session", http.StatusUnauthorized)
+		return
+	}
+	userID := uuid.MustParse(userIDStr)
+
+	var input AppPreferencesInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	// Check if user exists
+	// Optional: Check if user actually exists
 	var user models.User
-	if err := h.DB.First(&user, "id = ?", input.UserID).Error; err != nil {
+	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	// Check if user preferences already exist
+	retentionDays := parseRetentionPeriod(input.DataRetentionPeriod)
+
 	var prefs models.AppPreferences
-	result := h.DB.Where("user_id = ?", input.UserID).First(&prefs)
+	result := h.DB.Where("user_id = ?", userID).First(&prefs)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		// Create new preferences
-		input.ID = uuid.New()
-		input.CreatedAt = time.Now()
-		input.UpdatedAt = time.Now()
-
-		if err := h.DB.Create(&input).Error; err != nil {
+		prefs = models.AppPreferences{
+			ID:                  uuid.New(),
+			UserID:              userID,
+			Theme:               input.Theme,
+			ChartStyle:          input.ChartStyle,
+			ShowVolume:          input.ShowTradingVolume,
+			DefaultTimeframe:    input.DefaultTimeframe,
+			AutoRefresh:         input.AutoRefreshData,
+			CacheHistoricalData: input.CacheHistoricalData,
+			DownloadFrequency:   input.DownloadFrequency,
+			RetentionPeriodDays: retentionDays,
+			CreatedAt:           time.Now(),
+			UpdatedAt:           time.Now(),
+		}
+		if err := h.DB.Create(&prefs).Error; err != nil {
 			http.Error(w, "Failed to create user preferences", http.StatusInternalServerError)
 			return
 		}
@@ -120,12 +184,12 @@ func (h *SettingsHandler) StoreUserPreferences(w http.ResponseWriter, r *http.Re
 		// Update existing preferences
 		prefs.Theme = input.Theme
 		prefs.ChartStyle = input.ChartStyle
-		prefs.ShowVolume = input.ShowVolume
+		prefs.ShowVolume = input.ShowTradingVolume
 		prefs.DefaultTimeframe = input.DefaultTimeframe
-		prefs.AutoRefresh = input.AutoRefresh
+		prefs.AutoRefresh = input.AutoRefreshData
 		prefs.CacheHistoricalData = input.CacheHistoricalData
 		prefs.DownloadFrequency = input.DownloadFrequency
-		prefs.RetentionPeriodDays = input.RetentionPeriodDays
+		prefs.RetentionPeriodDays = retentionDays
 		prefs.UpdatedAt = time.Now()
 
 		if err := h.DB.Save(&prefs).Error; err != nil {

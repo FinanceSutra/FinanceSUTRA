@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   LineChart,
   LayoutDashboard,
@@ -95,11 +96,26 @@ const Sidebar: React.FC = () => {
   const [strategiesOpen, setStrategiesOpen] = useState(true);
   
   // Mock user data - in a real app, this would come from the API
-  const user = {
-    name: 'John Trader',
-    plan: 'Pro Plan',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-  };
+  // const user = {
+  //   name: 'John Trader',
+  //   plan: 'Pro Plan',
+  //   image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
+  // };
+   
+  const { data: user, isLoading: isLoadingUser, error: userError } = useQuery({
+  queryKey: ['user'],
+  queryFn: async () => {
+    const res = await fetch('http://localhost:8080/api/user', {
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to fetch user info');
+    const data = await res.json();
+    console.log(data);
+    return data;
+  },
+  staleTime: 60000,
+});
+
 
   // Check if any strategy-related page is active
   const isStrategiesActive = location.startsWith('/strategies') || 
@@ -197,10 +213,10 @@ const Sidebar: React.FC = () => {
       </nav>
       <div className="absolute bottom-0 w-56 bg-white border-t border-gray-200 p-3">
         <div className="flex items-center">
-          <img className="h-8 w-8 rounded-full ring-1 ring-gray-200" src={user.image} alt="User profile" />
+          <img className="h-8 w-8 rounded-full ring-1 ring-gray-200" src='https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' alt="User profile" />
           <div className="ml-2">
-            <p className="text-xs font-medium text-gray-900">{user.name}</p>
-            <p className="text-xs text-primary">{user.plan}</p>
+            <p className="text-sm font-medium text-gray-900">{user?.username}</p>
+            <p className="text-sm text-primary">{user?.plan}</p>
           </div>
           <button className="ml-auto p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
             <ChevronDown className="h-3.5 w-3.5" />

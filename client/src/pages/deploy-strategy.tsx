@@ -70,37 +70,50 @@ export default function DeployStrategyPage() {
     },
   });
 
-  const { data: strategies, isLoading: isLoadingStrategies } = useQuery({
-    queryKey: ['/api/strategies'],
-    queryFn: async () => {
-      // Fetch from frontend API
-      const frontendResponse = await apiRequest('GET', '/api/strategies');
-      const frontendStrategies = await frontendResponse.json() as Strategy[];
+  // const { data: strategies, isLoading: isLoadingStrategies } = useQuery({
+  //   queryKey: ['/api/strategies'],
+  //   queryFn: async () => {
+  //     // Fetch from frontend API
+  //     const frontendResponse = await apiRequest('GET', '/api/strategies');
+  //     const frontendStrategies = await frontendResponse.json() as Strategy[];
 
-      try {
-        // Fetch from backend API
-        const backendResponse = await apiRequest('GET', 'http://localhost:8080/strategies');
-        const backendStrategies = await backendResponse.json() as Strategy[];
+  //     try {
+  //       // Fetch from backend API
+  //       const backendResponse = await apiRequest('GET', 'http://localhost:8080/strategies');
+  //       const backendStrategies = await backendResponse.json() as Strategy[];
 
-        // Merge strategies, preferring frontend versions if duplicates exist
-        const mergedStrategies = [...backendStrategies];
-        frontendStrategies.forEach(frontendStrategy => {
-          const index = mergedStrategies.findIndex(s => s.id === frontendStrategy.id);
-          if (index >= 0) {
-            mergedStrategies[index] = frontendStrategy;
-          } else {
-            mergedStrategies.push(frontendStrategy);
-          }
+  //       // Merge strategies, preferring frontend versions if duplicates exist
+  //       const mergedStrategies = [...backendStrategies];
+  //       frontendStrategies.forEach(frontendStrategy => {
+  //         const index = mergedStrategies.findIndex(s => s.id === frontendStrategy.id);
+  //         if (index >= 0) {
+  //           mergedStrategies[index] = frontendStrategy;
+  //         } else {
+  //           mergedStrategies.push(frontendStrategy);
+  //         }
+  //       });
+
+  //       return mergedStrategies;
+  //     } catch (error) {
+  //       console.warn('Failed to fetch backend strategies:', error);
+  //       // If backend fetch fails, return frontend strategies
+  //       return frontendStrategies;
+  //     }
+  //   }
+  // });
+  const { data: strategies, isLoading: isLoadingStrategies, error } = useQuery({
+      queryKey: ['strategies'],
+      queryFn: async () => {
+        const res = await fetch('http://localhost:8080/strategies', {
+          credentials: 'include',
         });
-
-        return mergedStrategies;
-      } catch (error) {
-        console.warn('Failed to fetch backend strategies:', error);
-        // If backend fetch fails, return frontend strategies
-        return frontendStrategies;
-      }
-    }
-  });
+        if (!res.ok) throw new Error('Failed to fetch strategies');
+        const json = await res.json();
+        console.log("Fetched strategies:", json); // Debug
+        return json;
+      },
+      staleTime: 60000,
+    });
 
   const { data: brokerConnections, isLoading: isLoadingBrokers } = useQuery({
     queryKey: ['/api/broker-connections'],
@@ -162,7 +175,7 @@ export default function DeployStrategyPage() {
       ];
     }
 
-    return strategies.map((strategy) => (
+    return strategies.map((strategy : Strategy) => (
       <SelectItem key={strategy.id} value={strategy.id.toString()}>
         {strategy.name}
       </SelectItem>
