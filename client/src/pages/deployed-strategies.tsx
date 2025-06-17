@@ -111,9 +111,9 @@ export default function DeployedStrategiesPage() {
   const itemsPerPage = 10;
   
   const { data: deployedStrategies, isLoading } = useQuery({
-    queryKey: ['/api/deployed-strategies'],
+    queryKey: ['deploy-strategy'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/deployed-strategies');
+      const response = await fetch('http://localhost:8080/deploy-strategy');
       const strategies = await response.json() as DeployedStrategy[];
       // Enrich with broker names for display
       return strategies.map(strategy => ({
