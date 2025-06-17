@@ -46,9 +46,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 type DeployedStrategy = {
   id: number;
   name: string;
-  strategyId: number;
+  strategyId: string;
   brokerId: number;
-  userId: number;
+  userId: string;
   lotMultiplier: string;
   capitalDeployed: string;
   tradingType: string;
@@ -111,10 +111,12 @@ export default function DeployedStrategiesPage() {
   const itemsPerPage = 10;
   
   const { data: deployedStrategies, isLoading } = useQuery({
-    queryKey: ['deploy-strategy'],
+    queryKey: ['/api/deployed-strategies'],
     queryFn: async () => {
-      const response = await fetch('http://localhost:8080/deploy-strategy');
+      const response = await apiRequest('GET', '/api/deployed-strategies');
+      console.log(response);
       const strategies = await response.json() as DeployedStrategy[];
+      console.log("Fetched strategies:", strategies);
       // Enrich with broker names for display
       return strategies.map(strategy => ({
         ...strategy,

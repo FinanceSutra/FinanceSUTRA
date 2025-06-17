@@ -5,6 +5,7 @@ import (
 	"database/sql"
     "encoding/json"
 	"github.com/shopspring/decimal"
+	"github.com/google/uuid"
 )
 
 // User table
@@ -221,7 +222,7 @@ type InsertMarketData struct {
 // DeployedStrategy represents the deployed_strategies table
 type DeployedStrategy struct {
 	ID             int64     `db:"id"`
-	StrategyID     int64     `db:"strategy_id"`
+	StrategyID     uuid.UUID `gorm:"type:uuid;not null"`
 	UserID         int64     `db:"user_id"`
 	BrokerID       int64     `db:"broker_id"`
 	Name          string    `db:"name"`

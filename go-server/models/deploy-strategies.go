@@ -8,7 +8,7 @@ import (
 
 type DeployedStrategy struct {
     ID              uint      `gorm:"primaryKey;autoIncrement"`
-    StrategyID      uint      `gorm:"not null"`
+    StrategyID      uuid.UUID `gorm:"type:uuid;not null"`
     UserID          uuid.UUID `gorm:"type:uuid;not null"`
     BrokerID        uint      `gorm:"not null"`
     Name            string    `gorm:"not null"`

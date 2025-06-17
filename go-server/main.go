@@ -160,9 +160,17 @@ func main() {
 	// Auto-migrate DeployStrategy model
 	db.AutoMigrate(&models.DeployedStrategy{})
 
-	h2 := &handlers.DeployStrategyHandler{DB: db}
+	h2 := &handlers.DeployStrategyHandler{DB: db,
+		Store: store,}
 
 	mux.HandleFunc("/deploy-strategy", func(w http.ResponseWriter, r *http.Request) {
+		
+		session, _ := store.Get(r, "Go-session-id")
+	   _, ok := session.Values["user_id"]
+	   if !ok {
+	    	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	    	return
+	   }
 		switch r.Method {
 		case http.MethodGet:
 			h2.GetDeployedStrategies(w, r)
