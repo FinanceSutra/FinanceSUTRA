@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +40,7 @@ const formSchema = z.object({
   capitalDeployed: z.string().regex(/^\d+(\.\d+)?$/, "Must be a valid number"),
   tradingType: z.enum(["paper", "live"]),
 });
+
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -124,12 +126,15 @@ export default function DeployStrategyPage() {
   });
 
   const deployStrategyMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', "http://localhost:8080/deploy-strategy", data),
+    mutationFn: (data: any) => {
+      console.log("🚀 Sending data to backend:", data); // 🔍 log here
+      return apiRequest('POST', "http://localhost:8080/deploy-strategy", data);
+    },
     onSuccess: () => {
       toast({
         title: "Strategy Deployed",
         description: "Your strategy has been deployed successfully.",
-      });
+      })
       navigate("/deployed-strategies");
     },
     onError: (error) => {
@@ -154,7 +159,7 @@ export default function DeployStrategyPage() {
     console.log("Data after --> ");
     console.dir(formattedData);
     
-    deployStrategyMutation.mutate(formattedData);
+    deployStrategyMutation.mutate(data);
   };
 
   const isLoading = isLoadingStrategies || isLoadingBrokers;

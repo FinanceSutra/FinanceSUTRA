@@ -60,6 +60,27 @@ type DeployedStrategy = {
   broker?: string; // For display purposes
   symbolName?: string; // For display purposes
 };
+// type DeployedStrategy = {
+//   ID: number;
+//   Name: string;
+//   StrategyID: string;
+//   BrokerID: number;
+//   UserID: string;
+//   LotMultiplier: string;
+//   CapitalDeployed: string;
+//   TradingType: string;
+//   Status: string;
+//   currentPnl: number;
+//   percentPnl: number;
+//   DeployedAt: string;
+//   LastUpdated: string;
+//   Metadata: any | null;
+
+
+//   // Optional display-only properties (not from backend)
+//   broker?: string;
+//   symbolName?: string;
+// };
 
 // Sample options for sort and filtering
 const BROKER_OPTIONS = [
@@ -106,25 +127,53 @@ export default function DeployedStrategiesPage() {
   const [sortBy, setSortBy] = useState("expiry");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedStrategy, setSelectedStrategy] = useState<DeployedStrategy | null>(null);
+
+  const transformStrategy = (s: any): DeployedStrategy => ({
+  id: s.ID,
+  name: s.Name,
+  strategyId: s.StrategyID,
+  brokerId: s.BrokerID,
+  userId: s.UserID,
+  lotMultiplier: s.LotMultiplier,
+  capitalDeployed: s.CapitalDeployed,
+  tradingType: s.TradingType,
+  status: s.Status,
+  currentPnl: s.CurrentPnl,
+  percentPnl: s.PercentPnl,
+  deployedAt: s.DeployedAt,
+  lastUpdated: s.LastUpdated,
+  broker: getBrokerNameById(s.BrokerID),
+  symbolName: getSymbolNameForStrategy(s.ID),
+});
   
   // For pagination
   const itemsPerPage = 10;
   
+  // const { data: deployedStrategies, isLoading } = useQuery({
+  //   queryKey: ['/api/deployed-strategies'],
+  //   queryFn: async () => {
+  //     const response = await apiRequest('GET', 'http://localhost:8080/deploy-strategy');
+  //     console.log("This is response ---- " + response);
+  //     const strategies = await response.json() as DeployedStrategy[];
+  //     console.log("Fetched strategies:", strategies);
+  //     // Enrich with broker names for display
+  //     return strategies.map(strategy => ({
+  //       ...strategy,
+  //       broker: getBrokerNameById(strategy.brokerId),
+  //       symbolName: getSymbolNameForStrategy(strategy.id)
+  //     }));
+  //   },
+  // });
   const { data: deployedStrategies, isLoading } = useQuery({
-    queryKey: ['/api/deployed-strategies'],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/deployed-strategies');
-      console.log(response);
-      const strategies = await response.json() as DeployedStrategy[];
-      console.log("Fetched strategies:", strategies);
-      // Enrich with broker names for display
-      return strategies.map(strategy => ({
-        ...strategy,
-        broker: getBrokerNameById(strategy.brokerId),
-        symbolName: getSymbolNameForStrategy(strategy.id)
-      }));
-    },
-  });
+  queryKey: ['/api/deployed-strategies'],
+  queryFn: async () => {
+    const response = await apiRequest('GET', 'http://localhost:8080/deploy-strategy');
+    const raw = await response.json();
+    return raw.map(transformStrategy);
+  },
+  
+});
+
   
   // Sample position details for the selected strategy
   const [positionDetails, setPositionDetails] = useState<PositionDetail[]>([
