@@ -3,7 +3,7 @@ package handlers
 import (
     "encoding/json"
     "net/http"
-    "strconv"
+    "strings"
 
     "go-backend/models"
     "github.com/google/uuid"
@@ -11,14 +11,14 @@ import (
     "gorm.io/gorm"
 )
 
-type TradingWorkflowHandler struct {
+type OrderHandler struct {
     DB    *gorm.DB
     Store sessions.Store
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// GET /trading-workflows - list all trading workflows for the user
-func (h *TradingWorkflowHandler) GetTradingWorkflows(w http.ResponseWriter, r *http.Request) {
+/// GET /orders - list all orders for the user
+func (h *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
     session, err := h.Store.Get(r, "Go-session-id")
     if err != nil {
         http.Error(w, "Failed to get session", http.StatusInternalServerError)
@@ -41,28 +41,28 @@ func (h *TradingWorkflowHandler) GetTradingWorkflows(w http.ResponseWriter, r *h
         return
     }
 
-    var tradingWorkflows []models.TradingWorkflow
-    if err := h.DB.Where("user_id = ?", userID).Find(&tradingWorkflows).Error; err != nil {
-        http.Error(w, "Failed to fetch trading workflows", http.StatusInternalServerError)
+    var orders []models.Order
+    if err := h.DB.Where("user_id = ?", userID).Find(&orders).Error; err != nil {
+        http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
         return
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(tradingWorkflows)
+    json.NewEncoder(w).Encode(orders)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// GET /trading-workflows/{id} - get a single trading workflow
-func (h *TradingWorkflowHandler) GetTradingWorkflow(w http.ResponseWriter, r *http.Request) {
-    idStr := r.URL.Path[len("/trading-workflow/"):]
-    id, err := strconv.Atoi(idStr)
+// GET /orders/{id} - get a single order
+func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
+    idStr := strings.TrimPrefix(r.URL.Path, "/order/")
+    id, err := uuid.Parse(idStr)
     if err != nil {
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
 
-    var workflow models.TradingWorkflow
-    if err := h.DB.First(&workflow, id).Error; err != nil {
+    var order models.Order
+    if err := h.DB.First(&order, "id = ?", id).Error; err != nil {
         if err == gorm.ErrRecordNotFound {
             http.NotFound(w, r)
         } else {
@@ -72,20 +72,27 @@ func (h *TradingWorkflowHandler) GetTradingWorkflow(w http.ResponseWriter, r *ht
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(workflow)
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-type TradingWorkflowRequest struct {
-    Name           string  `json:"name"`
-    Description    *string `json:"description"`
-    Status         string  `json:"status"`
-    Schedule       *string `json:"schedule"`
-    IsAutomatic    bool    `json:"isAutomatic"`
-    Priority       int     `json:"priority"`
+    json.NewEncoder(w).Encode(order)
 }
 
-// POST /trading-workflows - create a new trading workflow
-func (h *TradingWorkflowHandler) CreateTradingWorkflow(w http.ResponseWriter, r *http.Request) {
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+type OrderRequest struct {
+    OrderID       string     `json:"orderId"`
+    UserID       string     `json:"userId"`
+    Instrument    string     `json:"instrument"`
+    Exchange      string     `json:"exchange"`
+    Quantity      int        `json:"quantity"`
+    Price         float64    `json:"price"`
+    OrderType     string     `json:"orderType"`
+    Side          string     `json:"side"`
+    Status        string     `json:"status"`
+    StrategyID    uuid.UUID  `json:"strategyId"`
+    IsExitOrder   bool       `json:"isExitOrder"`
+    ParentOrderID *uuid.UUID `json:"parentOrderId,omitempty"`
+}
+
+// POST /orders - create a new order
+func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
     session, err := h.Store.Get(r, "Go-session-id")
     if err != nil {
         http.Error(w, "Failed to get session", http.StatusInternalServerError)
@@ -107,57 +114,54 @@ func (h *TradingWorkflowHandler) CreateTradingWorkflow(w http.ResponseWriter, r 
         return
     }
 
-    // Step 1: Read and decode into the request struct
-    var req TradingWorkflowRequest
+    var req OrderRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
-    // Step 2: Create the trading workflow object using your existing model
-    tradingWorkflow := models.TradingWorkflow{
-        ID:             uuid.New(),
-        UserID:         userID,
-        Name:           req.Name,
-        Description:    req.Description,
-        Status:         req.Status,
-        Schedule:       req.Schedule,
-        IsAutomatic:    req.IsAutomatic,
-        Priority:       req.Priority,
-        ExecutionCount: 0, // Default value
-        // CreatedAt and UpdatedAt will be set automatically by GORM
-        // LastExecutedAt starts as nil
-        // LogHistory starts as nil
+    order := models.Order{
+        ID:            uuid.New(),
+        OrderID:       req.OrderID,
+        UserID:        userID,
+        Instrument:    req.Instrument,
+        Exchange:      req.Exchange,
+        Quantity:      req.Quantity,
+        Price:         req.Price,
+        OrderType:     req.OrderType,
+        Side:          req.Side,
+        Status:        req.Status,
+        StrategyID:    req.StrategyID,
+        IsExitOrder:   req.IsExitOrder,
+        ParentOrderID: req.ParentOrderID,
     }
 
-    // Set default status if not provided
-    if tradingWorkflow.Status == "" {
-        tradingWorkflow.Status = "inactive" // matches your model default
+    if order.Status == "" {
+        order.Status = "OPEN"
     }
 
-    if err := h.DB.Create(&tradingWorkflow).Error; err != nil {
+    if err := h.DB.Create(&order).Error; err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(tradingWorkflow)
+    json.NewEncoder(w).Encode(order)
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// PUT /trading-workflows/{id} - update an existing trading workflow
-func (h *TradingWorkflowHandler) UpdateTradingWorkflow(w http.ResponseWriter, r *http.Request) {
-    idStr := r.URL.Path[len("/trading-workflow/"):]
-    id, err := strconv.Atoi(idStr)
+// PUT /orders/{id} - update an existing order
+func (h *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+    idStr := strings.TrimPrefix(r.URL.Path, "/order/")
+    id, err := uuid.Parse(idStr)
     if err != nil {
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
 
-    var existing models.TradingWorkflow
-    if err := h.DB.First(&existing, id).Error; err != nil {
+    var existing models.Order
+    if err := h.DB.First(&existing, "id = ?", id).Error; err != nil {
         if err == gorm.ErrRecordNotFound {
             http.NotFound(w, r)
         } else {
@@ -166,13 +170,13 @@ func (h *TradingWorkflowHandler) UpdateTradingWorkflow(w http.ResponseWriter, r 
         return
     }
 
-    var updated models.TradingWorkflow
+    var updated models.Order
     if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
-    updated.ID = existing.ID // maintain same ID
+    updated.ID = existing.ID
     if err := h.DB.Save(&updated).Error; err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -183,29 +187,29 @@ func (h *TradingWorkflowHandler) UpdateTradingWorkflow(w http.ResponseWriter, r 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DELETE /trading-workflows/{id} - delete a trading workflow (optional addition)
-func (h *TradingWorkflowHandler) DeleteTradingWorkflow(w http.ResponseWriter, r *http.Request) {
-    idStr := r.URL.Path[len("/trading-workflow/"):]
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        http.Error(w, "Invalid ID", http.StatusBadRequest)
-        return
-    }
+// DELETE /orders/{id} - delete an order
+// func (h *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
+//     idStr := strings.TrimPrefix(r.URL.Path, "/order/")
+//     id, err := uuid.Parse(idStr)
+//     if err != nil {
+//         http.Error(w, "Invalid ID", http.StatusBadRequest)
+//         return
+//     }
 
-    var workflow models.TradingWorkflow
-    if err := h.DB.First(&workflow, id).Error; err != nil {
-        if err == gorm.ErrRecordNotFound {
-            http.NotFound(w, r)
-        } else {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-        }
-        return
-    }
+//     var order models.Order
+//     if err := h.DB.First(&order, "id = ?", id).Error; err != nil {
+//         if err == gorm.ErrRecordNotFound {
+//             http.NotFound(w, r)
+//         } else {
+//             http.Error(w, err.Error(), http.StatusInternalServerError)
+//         }
+//         return
+//     }
 
-    if err := h.DB.Delete(&workflow).Error; err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+//     if err := h.DB.Delete(&order).Error; err != nil {
+//         http.Error(w, err.Error(), http.StatusInternalServerError)
+//         return
+//     }
 
-    w.WriteHeader(http.StatusNoContent)
-}
+//     w.WriteHeader(http.StatusNoContent)
+// }

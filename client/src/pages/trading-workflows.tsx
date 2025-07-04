@@ -19,42 +19,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Play, Pause, Plus, Settings, ArrowRight, Check, AlertTriangle, Info, Clock, Save } from "lucide-react";
 
-interface WorkflowStep {
-  id: number;
-  workflowId: number;
-  name: string;
-  order: number;
-  type: string;
-  description: string;
-  config: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface WorkflowCondition {
-  id: number;
-  workflowId: number;
-  stepId?: number;
-  type: string;
-  operator: string;
-  value: string;
-  description: string;
-  config: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface WorkflowAction {
-  id: number;
-  workflowId: number;
-  stepId?: number;
-  type: string;
-  description: string;
-  config: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 interface WorkflowLog {
   id: number;
   status: string;
@@ -63,26 +27,26 @@ interface WorkflowLog {
 }
 
 interface TradingWorkflow {
-  id: number;
-  userId: number;
+  id: string; // UUID from backend
+  userId: string; // UUID from backend
   name: string;
-  description: string;
+  description?: string; // Optional pointer in backend
   status: "active" | "inactive" | "paused" | "archived";
   isAutomatic: boolean;
   priority: number;
-  schedule?: string;
+  schedule?: string; // Optional pointer in backend
   executionCount: number;
-  lastExecutedAt?: Date;
+  lastExecutedAt?: Date; // Optional pointer in backend
   createdAt: Date;
   updatedAt: Date;
-  logHistory: WorkflowLog[];
+  logHistory?: any; // JSON field from backend
 }
 
 const workflowFormSchema = z.object({
   name: z.string().min(3, { message: "Workflow name must be at least 3 characters" }),
-  description: z.string().min(5, { message: "Description must be at least 5 characters" }),
-  isAutomatic: z.boolean().default(true),
-  priority: z.coerce.number().int().min(1).max(10),
+  description: z.string().min(5, { message: "Description must be at least 5 characters" }).optional(),
+  isAutomatic: z.boolean().default(false),
+  priority: z.coerce.number().int().min(0).max(10).default(0),
   schedule: z.string().optional(),
   status: z.enum(["active", "inactive", "paused", "archived"]).default("inactive")
 });
@@ -90,24 +54,26 @@ const workflowFormSchema = z.object({
 export default function TradingWorkflows() {
   const { toast } = useToast();
   const [selectedWorkflow, setSelectedWorkflow] = useState<TradingWorkflow | null>(null);
-  const [activeTab, setActiveTab] = useState("steps");
+  const [activeTab, setActiveTab] = useState("execution");
 
-  // Fetch all workflows
-  const { data: workflows } = useQuery({
-    queryKey: ['/api/workflows'],
+  // Fetch all workflows from Go backend
+  const { data: workflows, isLoading, error } = useQuery({
+    queryKey: ['trading-workflows'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "http://localhost:8080/trading-workflows");
+      console.log(response);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    },
     retry: 1
   });
 
-  // Fetch workflow steps
-  const { data: workflowSteps = [], isLoading: isLoadingSteps } = useQuery({
-    queryKey: ['/api/workflows', selectedWorkflow?.id, 'steps'],
-    enabled: !!selectedWorkflow,
-  });
-
-  // Execute workflow mutation
+  // Execute workflow mutation (placeholder - implement when backend supports it)
   const executeWorkflowMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("POST", `/api/workflows/${id}/execute`);
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("POST", `http://localhost:8080/trading-workflow/${id}/execute`);
       return response.json();
     },
     onSuccess: () => {
@@ -116,7 +82,7 @@ export default function TradingWorkflows() {
         description: "The workflow is now running in the background.",
         variant: "default"
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-workflows'] });
     },
     onError: (error: any) => {
       toast({
@@ -129,8 +95,8 @@ export default function TradingWorkflows() {
 
   // Toggle workflow status mutation
   const toggleStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number, status: string }) => {
-      const response = await apiRequest("POST", `/api/workflows/${id}/status`, { status });
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+      const response = await apiRequest("PUT", `http://localhost:8080/trading-workflow/${id}`, { status });
       return response.json();
     },
     onSuccess: () => {
@@ -139,7 +105,7 @@ export default function TradingWorkflows() {
         description: "The workflow status has been updated.",
         variant: "default"
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-workflows'] });
     },
     onError: (error: any) => {
       toast({
@@ -156,8 +122,8 @@ export default function TradingWorkflows() {
     defaultValues: {
       name: "",
       description: "",
-      isAutomatic: true,
-      priority: 5,
+      isAutomatic: false,
+      priority: 0,
       schedule: "0 9 * * 1-5", // Default: weekdays at 9 AM
       status: "inactive"
     },
@@ -166,7 +132,7 @@ export default function TradingWorkflows() {
   // Create workflow mutation
   const createWorkflowMutation = useMutation({
     mutationFn: async (data: z.infer<typeof workflowFormSchema>) => {
-      const response = await apiRequest("POST", "/api/workflows", data);
+      const response = await apiRequest("POST", "http://localhost:8080/trading-workflows", data);
       return response.json();
     },
     onSuccess: () => {
@@ -176,7 +142,7 @@ export default function TradingWorkflows() {
         variant: "default"
       });
       form.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-workflows'] });
     },
     onError: (error: any) => {
       toast({
@@ -195,16 +161,16 @@ export default function TradingWorkflows() {
   
   // Select workflow for details view
   const handleSelectWorkflow = (workflow: TradingWorkflow) => {
-    navigate(`/workflow/${workflow.id}`);
+    setSelectedWorkflow(workflow);
   };
 
   // Handle workflow execution
-  const handleExecuteWorkflow = (id: number) => {
+  const handleExecuteWorkflow = (id: string) => {
     executeWorkflowMutation.mutate(id);
   };
 
   // Handle workflow status toggle
-  const handleToggleStatus = (id: number, currentStatus: string) => {
+  const handleToggleStatus = (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
     toggleStatusMutation.mutate({ id, status: newStatus });
   };
@@ -235,49 +201,26 @@ export default function TradingWorkflows() {
     }
   };
 
-  // Render a step card
-  const renderStep = (step: WorkflowStep, index: number) => {
-    return (
-      <Card key={step.id} className="mb-4">
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-md font-medium">
-                {index + 1}. {step.name}
-              </CardTitle>
-              <CardDescription>{step.description}</CardDescription>
-            </div>
-            <Badge variant={
-              step.type === "indicator" ? "outline" : 
-              step.type === "condition" ? "secondary" : 
-              "default"
-            }>
-              {step.type}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm">
-            {Object.entries(step.config).map(([key, value]) => (
-              <div key={key} className="flex items-center gap-2 mb-1">
-                <span className="font-medium">{key}:</span>
-                <span>{String(value)}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
   // Render execution log items
-  const renderLogHistory = (logs: WorkflowLog[]) => {
-    if (!logs || logs.length === 0) {
+  const renderLogHistory = (logHistory?: any) => {
+    if (!logHistory) {
       return <div className="text-center p-4 text-gray-500">No execution history available</div>;
     }
 
-    return logs.map((log) => (
-      <div key={log.id} className="p-3 border-b last:border-b-0 flex items-start gap-3">
+    // Parse JSON if it's a string, otherwise use as is
+    let logs;
+    try {
+      logs = typeof logHistory === 'string' ? JSON.parse(logHistory) : logHistory;
+    } catch {
+      logs = [];
+    }
+
+    if (!Array.isArray(logs) || logs.length === 0) {
+      return <div className="text-center p-4 text-gray-500">No execution history available</div>;
+    }
+
+    return logs.map((log: any, index: number) => (
+      <div key={index} className="p-3 border-b last:border-b-0 flex items-start gap-3">
         <div className={`mt-1 p-1 rounded-full ${log.status === 'success' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
           {log.status === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
         </div>
@@ -286,34 +229,34 @@ export default function TradingWorkflows() {
             <div className="font-medium">{log.status === 'success' ? 'Success' : 'Warning'}</div>
             <div className="text-xs text-gray-500 flex items-center gap-1">
               <Clock size={12} />
-              {new Date(log.executedAt).toLocaleString()}
+              {log.executedAt ? new Date(log.executedAt).toLocaleString() : 'Unknown time'}
             </div>
           </div>
-          <div className="text-sm mt-1">{log.message}</div>
+          <div className="text-sm mt-1">{log.message || 'No message'}</div>
         </div>
       </div>
     ));
   };
 
-  // if (isLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center h-screen">
-  //       <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  //       <span className="ml-2">Loading workflows...</span>
-  //     </div>
-  //   );
-  // }
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading workflows...</span>
+      </div>
+    );
+  }
 
-  // if (error) {
-  //   return (
-  //     <div className="flex flex-col items-center justify-center h-screen">
-  //       <div className="text-red-500 mb-4">Failed to load workflows</div>
-  //       <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/workflows'] })}>
-  //         Retry
-  //       </Button>
-  //     </div>
-  //   );
-  // }
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="text-red-500 mb-4">Failed to load workflows: {error.message}</div>
+        <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['trading-workflows'] })}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -349,7 +292,7 @@ export default function TradingWorkflows() {
                         </Badge>
                       </div>
                       <CardDescription className="text-xs">
-                        {workflow.description}
+                        {workflow.description || "No description"}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="pb-2">
@@ -459,7 +402,7 @@ export default function TradingWorkflows() {
               
               <div className="mb-6">
                 <div className="bg-muted p-4 rounded-md">
-                  <p className="mb-4">{selectedWorkflow.description}</p>
+                  <p className="mb-4">{selectedWorkflow.description || "No description provided"}</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-gray-500">Status</p>
@@ -485,43 +428,9 @@ export default function TradingWorkflows() {
               
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-4">
-                  <TabsTrigger value="steps">Steps</TabsTrigger>
                   <TabsTrigger value="execution">Execution History</TabsTrigger>
                   <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
-                
-                <TabsContent value="steps">
-                  {isLoadingSteps ? (
-                    <div className="flex justify-center p-6">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    </div>
-                  ) : workflowSteps.length > 0 ? (
-                    <div className="space-y-2">
-                      {workflowSteps.map((step: WorkflowStep, index: number) => renderStep(step, index))}
-                      <Button className="mt-4" variant="outline">
-                        <Plus size={16} className="mr-1" /> Add Step
-                      </Button>
-                    </div>
-                  ) : (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>No Steps Defined</CardTitle>
-                        <CardDescription>
-                          This workflow doesn't have any steps yet
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-gray-500 mb-4">
-                          Steps define the sequence of operations that your workflow will perform.
-                          Each step can check indicators, apply conditions, or perform actions.
-                        </p>
-                        <Button>
-                          <Plus size={16} className="mr-1" /> Add First Step
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
                 
                 <TabsContent value="execution">
                   <Card>
@@ -578,7 +487,7 @@ export default function TradingWorkflows() {
                           <FormLabel htmlFor="workflowDescription">Description</FormLabel>
                           <Textarea 
                             id="workflowDescription" 
-                            value={selectedWorkflow.description}
+                            value={selectedWorkflow.description || ""}
                             readOnly
                           />
                         </div>
@@ -602,11 +511,11 @@ export default function TradingWorkflows() {
                         </div>
                         
                         <div className="space-y-2">
-                          <FormLabel htmlFor="workflowPriority">Priority (1-10)</FormLabel>
+                          <FormLabel htmlFor="workflowPriority">Priority (0-10)</FormLabel>
                           <Input 
                             id="workflowPriority" 
                             type="number"
-                            min={1}
+                            min={0}
                             max={10}
                             value={selectedWorkflow.priority}
                           />

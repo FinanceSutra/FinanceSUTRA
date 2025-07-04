@@ -3,7 +3,8 @@ package handlers
 import (
     "encoding/json"
     "net/http"
-    "strconv"
+    "strings"
+    "time"
 
     "go-backend/models"
     "github.com/google/uuid"
@@ -11,14 +12,14 @@ import (
     "gorm.io/gorm"
 )
 
-type TradingWorkflowHandler struct {
+type TradeSummaryHandler struct {
     DB    *gorm.DB
     Store sessions.Store
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// GET /trading-workflows - list all trading workflows for the user
-func (h *TradingWorkflowHandler) GetTradingWorkflows(w http.ResponseWriter, r *http.Request) {
+/// GET /trade-summaries - list all trade summaries for the user
+func (h *TradeSummaryHandler) GetTradeSummaries(w http.ResponseWriter, r *http.Request) {
     session, err := h.Store.Get(r, "Go-session-id")
     if err != nil {
         http.Error(w, "Failed to get session", http.StatusInternalServerError)
@@ -41,28 +42,28 @@ func (h *TradingWorkflowHandler) GetTradingWorkflows(w http.ResponseWriter, r *h
         return
     }
 
-    var tradingWorkflows []models.TradingWorkflow
-    if err := h.DB.Where("user_id = ?", userID).Find(&tradingWorkflows).Error; err != nil {
-        http.Error(w, "Failed to fetch trading workflows", http.StatusInternalServerError)
+    var tradeSummaries []models.TradeSummary
+    if err := h.DB.Where("user_id = ?", userID).Find(&tradeSummaries).Error; err != nil {
+        http.Error(w, "Failed to fetch trade summaries", http.StatusInternalServerError)
         return
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(tradingWorkflows)
+    json.NewEncoder(w).Encode(tradeSummaries)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// GET /trading-workflows/{id} - get a single trading workflow
-func (h *TradingWorkflowHandler) GetTradingWorkflow(w http.ResponseWriter, r *http.Request) {
-    idStr := r.URL.Path[len("/trading-workflow/"):]
-    id, err := strconv.Atoi(idStr)
+// GET /trade-summaries/{id} - get a single trade summary
+func (h *TradeSummaryHandler) GetTradeSummary(w http.ResponseWriter, r *http.Request) {
+    idStr := strings.TrimPrefix(r.URL.Path, "/trade-summary/")
+    id, err := uuid.Parse(idStr)
     if err != nil {
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
 
-    var workflow models.TradingWorkflow
-    if err := h.DB.First(&workflow, id).Error; err != nil {
+    var tradeSummary models.TradeSummary
+    if err := h.DB.First(&tradeSummary, "id = ?", id).Error; err != nil {
         if err == gorm.ErrRecordNotFound {
             http.NotFound(w, r)
         } else {
@@ -72,20 +73,22 @@ func (h *TradingWorkflowHandler) GetTradingWorkflow(w http.ResponseWriter, r *ht
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(workflow)
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-type TradingWorkflowRequest struct {
-    Name           string  `json:"name"`
-    Description    *string `json:"description"`
-    Status         string  `json:"status"`
-    Schedule       *string `json:"schedule"`
-    IsAutomatic    bool    `json:"isAutomatic"`
-    Priority       int     `json:"priority"`
+    json.NewEncoder(w).Encode(tradeSummary)
 }
 
-// POST /trading-workflows - create a new trading workflow
-func (h *TradingWorkflowHandler) CreateTradingWorkflow(w http.ResponseWriter, r *http.Request) {
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+type TradeSummaryRequest struct {
+    StrategyID  uuid.UUID `json:"strategyId"`
+    Instrument  string    `json:"instrument"`
+    EntryTime   time.Time `json:"entryTime"`
+    ExitTime    time.Time `json:"exitTime"`
+    NetPnL      float64   `json:"netPnL"`
+    TotalFees   float64   `json:"totalFees"`
+    TotalTrades int       `json:"totalTrades"`
+}
+
+// POST /trade-summaries - create a new trade summary
+func (h *TradeSummaryHandler) CreateTradeSummary(w http.ResponseWriter, r *http.Request) {
     session, err := h.Store.Get(r, "Go-session-id")
     if err != nil {
         http.Error(w, "Failed to get session", http.StatusInternalServerError)
@@ -107,57 +110,46 @@ func (h *TradingWorkflowHandler) CreateTradingWorkflow(w http.ResponseWriter, r 
         return
     }
 
-    // Step 1: Read and decode into the request struct
-    var req TradingWorkflowRequest
+    var req TradeSummaryRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
-    // Step 2: Create the trading workflow object using your existing model
-    tradingWorkflow := models.TradingWorkflow{
-        ID:             uuid.New(),
-        UserID:         userID,
-        Name:           req.Name,
-        Description:    req.Description,
-        Status:         req.Status,
-        Schedule:       req.Schedule,
-        IsAutomatic:    req.IsAutomatic,
-        Priority:       req.Priority,
-        ExecutionCount: 0, // Default value
-        // CreatedAt and UpdatedAt will be set automatically by GORM
-        // LastExecutedAt starts as nil
-        // LogHistory starts as nil
+    tradeSummary := models.TradeSummary{
+        ID:          uuid.New(),
+        UserID:      userID,
+        StrategyID:  req.StrategyID,
+        Instrument:  req.Instrument,
+        EntryTime:   req.EntryTime,
+        ExitTime:    req.ExitTime,
+        NetPnL:      req.NetPnL,
+        TotalFees:   req.TotalFees,
+        TotalTrades: req.TotalTrades,
     }
 
-    // Set default status if not provided
-    if tradingWorkflow.Status == "" {
-        tradingWorkflow.Status = "inactive" // matches your model default
-    }
-
-    if err := h.DB.Create(&tradingWorkflow).Error; err != nil {
+    if err := h.DB.Create(&tradeSummary).Error; err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
     }
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(tradingWorkflow)
+    json.NewEncoder(w).Encode(tradeSummary)
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// PUT /trading-workflows/{id} - update an existing trading workflow
-func (h *TradingWorkflowHandler) UpdateTradingWorkflow(w http.ResponseWriter, r *http.Request) {
-    idStr := r.URL.Path[len("/trading-workflow/"):]
-    id, err := strconv.Atoi(idStr)
+// PUT /trade-summaries/{id} - update an existing trade summary
+func (h *TradeSummaryHandler) UpdateTradeSummary(w http.ResponseWriter, r *http.Request) {
+    idStr := strings.TrimPrefix(r.URL.Path, "/trade-summary/")
+    id, err := uuid.Parse(idStr)
     if err != nil {
         http.Error(w, "Invalid ID", http.StatusBadRequest)
         return
     }
 
-    var existing models.TradingWorkflow
-    if err := h.DB.First(&existing, id).Error; err != nil {
+    var existing models.TradeSummary
+    if err := h.DB.First(&existing, "id = ?", id).Error; err != nil {
         if err == gorm.ErrRecordNotFound {
             http.NotFound(w, r)
         } else {
@@ -166,13 +158,13 @@ func (h *TradingWorkflowHandler) UpdateTradingWorkflow(w http.ResponseWriter, r 
         return
     }
 
-    var updated models.TradingWorkflow
+    var updated models.TradeSummary
     if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
         return
     }
 
-    updated.ID = existing.ID // maintain same ID
+    updated.ID = existing.ID
     if err := h.DB.Save(&updated).Error; err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -183,29 +175,29 @@ func (h *TradingWorkflowHandler) UpdateTradingWorkflow(w http.ResponseWriter, r 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DELETE /trading-workflows/{id} - delete a trading workflow (optional addition)
-func (h *TradingWorkflowHandler) DeleteTradingWorkflow(w http.ResponseWriter, r *http.Request) {
-    idStr := r.URL.Path[len("/trading-workflow/"):]
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        http.Error(w, "Invalid ID", http.StatusBadRequest)
-        return
-    }
+// DELETE /trade-summaries/{id} - delete a trade summary
+// func (h *TradeSummaryHandler) DeleteTradeSummary(w http.ResponseWriter, r *http.Request) {
+//     idStr := strings.TrimPrefix(r.URL.Path, "/trade-summary/")
+//     id, err := uuid.Parse(idStr)
+//     if err != nil {
+//         http.Error(w, "Invalid ID", http.StatusBadRequest)
+//         return
+//     }
 
-    var workflow models.TradingWorkflow
-    if err := h.DB.First(&workflow, id).Error; err != nil {
-        if err == gorm.ErrRecordNotFound {
-            http.NotFound(w, r)
-        } else {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-        }
-        return
-    }
+//     var tradeSummary models.TradeSummary
+//     if err := h.DB.First(&tradeSummary, "id = ?", id).Error; err != nil {
+//         if err == gorm.ErrRecordNotFound {
+//             http.NotFound(w, r)
+//         } else {
+//             http.Error(w, err.Error(), http.StatusInternalServerError)
+//         }
+//         return
+//     }
 
-    if err := h.DB.Delete(&workflow).Error; err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+//     if err := h.DB.Delete(&tradeSummary).Error; err != nil {
+//         http.Error(w, err.Error(), http.StatusInternalServerError)
+//         return
+//     }
 
-    w.WriteHeader(http.StatusNoContent)
-}
+//     w.WriteHeader(http.StatusNoContent)
+// }

@@ -16,12 +16,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 
-// Form schema for workflow creation/editing
+// Form schema for workflow creation/editing - updated to match backend model
 const workflowFormSchema = z.object({
   name: z.string().min(3, { message: "Workflow name must be at least 3 characters" }),
-  description: z.string().min(5, { message: "Description must be at least 5 characters" }),
-  isAutomatic: z.boolean().default(true),
-  priority: z.coerce.number().int().min(1).max(10),
+  description: z.string().min(5, { message: "Description must be at least 5 characters" }).optional(),
+  isAutomatic: z.boolean().default(false),
+  priority: z.coerce.number().int().min(0).max(10).default(0),
   schedule: z.string().optional(),
   status: z.enum(["active", "inactive", "paused", "archived"]).default("inactive")
 });
@@ -35,9 +35,13 @@ export default function CreateWorkflow() {
   const isEditing = !!id;
   const [isLoading, setIsLoading] = useState(isEditing);
 
-  // Get existing workflow data if editing
+  // Get existing workflow data if editing - updated endpoint
   const { data: workflow, isLoading: isLoadingWorkflow } = useQuery({
-    queryKey: ['/api/workflows', id],
+    queryKey: ['trading-workflows', id],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `http://localhost:8080/trading-workflow/${id}`);
+      return response.json();
+    },
     enabled: isEditing,
   });
 
@@ -47,8 +51,8 @@ export default function CreateWorkflow() {
     defaultValues: {
       name: "",
       description: "",
-      isAutomatic: true,
-      priority: 5,
+      isAutomatic: false,
+      priority: 0,
       schedule: "0 9 * * 1-5", // Default: weekdays at 9 AM
       status: "inactive"
     },
@@ -58,21 +62,21 @@ export default function CreateWorkflow() {
   useEffect(() => {
     if (workflow && isEditing) {
       form.reset({
-        name: workflow.name,
-        description: workflow.description,
-        isAutomatic: workflow.isAutomatic,
-        priority: workflow.priority,
-        schedule: workflow.schedule || "",
-        status: workflow.status
+        name: workflow.name || "",
+        description: workflow.description || "",
+        isAutomatic: workflow.isAutomatic || false,
+        priority: workflow.priority || 0,
+        schedule: workflow.schedule || "0 9 * * 1-5",
+        status: workflow.status || "inactive"
       });
       setIsLoading(false);
     }
   }, [workflow, form, isEditing]);
 
-  // Create workflow mutation
+  // Create workflow mutation - updated endpoint
   const createWorkflowMutation = useMutation({
     mutationFn: async (data: WorkflowFormValues) => {
-      const response = await apiRequest("POST", "/api/workflows", data);
+      const response = await apiRequest("POST", "http://localhost:8080/trading-workflows", data);
       return response.json();
     },
     onSuccess: () => {
@@ -81,7 +85,7 @@ export default function CreateWorkflow() {
         description: "Your trading workflow has been created successfully.",
         variant: "default"
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-workflows'] });
       navigate("/trading-workflows");
     },
     onError: (error: any) => {
@@ -93,10 +97,10 @@ export default function CreateWorkflow() {
     }
   });
 
-  // Update workflow mutation
+  // Update workflow mutation - updated endpoint
   const updateWorkflowMutation = useMutation({
     mutationFn: async (data: WorkflowFormValues) => {
-      const response = await apiRequest("PUT", `/api/workflows/${id}`, data);
+      const response = await apiRequest("PUT", `http://localhost:8080/trading-workflow/${id}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -105,7 +109,7 @@ export default function CreateWorkflow() {
         description: "Your trading workflow has been updated successfully.",
         variant: "default"
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['trading-workflows'] });
       navigate("/trading-workflows");
     },
     onError: (error: any) => {
@@ -240,9 +244,9 @@ export default function CreateWorkflow() {
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Priority (1-10)</FormLabel>
+                      <FormLabel>Priority (0-10)</FormLabel>
                       <FormControl>
-                        <Input type="number" min={1} max={10} {...field} />
+                        <Input type="number" min={0} max={10} {...field} />
                       </FormControl>
                       <FormDescription>
                         Higher priority workflows execute first (10 is highest)

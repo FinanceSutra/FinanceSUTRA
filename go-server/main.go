@@ -7,12 +7,12 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"encoding/gob"
+	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
+	"github.com/rs/cors"
 	"go-backend/handlers"
 	"go-backend/models"
-	"github.com/rs/cors"
-	"github.com/gorilla/sessions"
-    "encoding/gob"
-    "github.com/google/uuid"
 	// "os"
 	// "fmt"
 	// "time"
@@ -42,29 +42,27 @@ import (
 // 	return nil, fmt.Errorf("Could not connect to database after %d attempts: %w", maxRetries, err)
 // }
 
-
 func main() {
-// 	dbHost := os.Getenv("DB_HOST")
-//     dbPort := os.Getenv("DB_PORT")
-//     dbUser := os.Getenv("DB_USER")
-//     dbPassword := os.Getenv("DB_PASSWORD")
-//     dbName := os.Getenv("DB_NAME")
+	// 	dbHost := os.Getenv("DB_HOST")
+	//     dbPort := os.Getenv("DB_PORT")
+	//     dbUser := os.Getenv("DB_USER")
+	//     dbPassword := os.Getenv("DB_PASSWORD")
+	//     dbName := os.Getenv("DB_NAME")
 
-//     dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-//     dbHost, dbPort, dbUser, dbPassword, dbName)
+	//     dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+	//     dbHost, dbPort, dbUser, dbPassword, dbName)
 
 	gob.Register(uuid.UUID{})
-    store := sessions.NewCookieStore([]byte("your-very-secret-key"))
-        store.Options = &sessions.Options{
-	    Path:     "/",
-	    MaxAge:   86400 * 7, // 1 week
-	    HttpOnly: true,
-	    SameSite: http.SameSiteLaxMode,
-        Secure: false,
+	store := sessions.NewCookieStore([]byte("your-very-secret-key"))
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 7, // 1 week
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
+	}
 
-    }
-
-	dsn := "host=localhost user=postgres password='Atharva2005%' dbname=AfterLogin port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password='Daksh@2706' dbname=Leo1 port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
@@ -80,61 +78,61 @@ func main() {
 	db.AutoMigrate(&models.User{})
 
 	h := handlers.Handler{
-        DB: db,
-        Store: store,
-    }
-    
-    h0 := handlers.SettingsHandler{
-   		 DB:    db,
-   		 Store: store, // pass the session store
-    }
+		DB:    db,
+		Store: store,
+	}
+
+	h0 := handlers.SettingsHandler{
+		DB:    db,
+		Store: store, // pass the session store
+	}
 
 	mux.HandleFunc("/api/user", h.GetCurrentUser)
 
-    mux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-        switch r.Method {
-        case "POST":
-            h.Register(w, r)
-        case "GET":
-            h.GetUsers(w, r)
-        default:
-            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-        }
-    })
+	mux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			h.Register(w, r)
+		case "GET":
+			h.GetUsers(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
-    mux.HandleFunc("/login", h.LoginUser);
-	
-	mux.HandleFunc("/user/settings", func(w http.ResponseWriter, r *http.Request){
-        if r.Method == http.MethodPut{
-            h0.StoreNotiPref(w,r)
-        }
-    } )
+	mux.HandleFunc("/login", h.LoginUser)
 
-	mux.HandleFunc("/user/preferences", func(w http.ResponseWriter, r *http.Request){
+	mux.HandleFunc("/user/settings", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			h0.StoreNotiPref(w, r)
+		}
+	})
+
+	mux.HandleFunc("/user/preferences", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions {
-        w.WriteHeader(http.StatusOK)
-        return
-    }
-        if r.Method == http.MethodPut{
-            h0.StoreUserPreferences(w,r)
-        }
-    } )
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method == http.MethodPut {
+			h0.StoreUserPreferences(w, r)
+		}
+	})
 
 	// Automigrate strategies model
 
-    db.AutoMigrate(&models.Strategy{})
+	db.AutoMigrate(&models.Strategy{})
 
 	h1 := &handlers.StrategyHandler{DB: db,
-	 Store: store,}
+		Store: store}
 
 	mux.HandleFunc("/strategies", func(w http.ResponseWriter, r *http.Request) {
 
 		session, _ := store.Get(r, "Go-session-id")
-	   _, ok := session.Values["user_id"]
-	   if !ok {
-	    	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	    	return
-	   }
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 
 		if r.Method == http.MethodGet {
 			h1.GetStrategies(w, r)
@@ -161,16 +159,16 @@ func main() {
 	db.AutoMigrate(&models.DeployedStrategy{})
 
 	h2 := &handlers.DeployStrategyHandler{DB: db,
-		Store: store,}
+		Store: store}
 
 	mux.HandleFunc("/deploy-strategy", func(w http.ResponseWriter, r *http.Request) {
-		
+
 		session, _ := store.Get(r, "Go-session-id")
-	   _, ok := session.Values["user_id"]
-	   if !ok {
-	    	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	    	return
-	   }
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			h2.GetDeployedStrategies(w, r)
@@ -212,25 +210,157 @@ func main() {
 	// Auto-migrate TradingWorkflow model
 	db.AutoMigrate(&models.TradingWorkflow{})
 
-	h4 := &handlers.TradingWorkflowHandler{DB: db}
+	h4 := &handlers.TradingWorkflowHandler{DB: db,
+		Store: store}
 
 	mux.HandleFunc("/trading-workflows", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "Go-session-id")
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
-			h4.GetAll(w, r)
+			h4.GetTradingWorkflows(w, r)
 		case http.MethodPost:
-			h4.Create(w, r)
+			h4.CreateTradingWorkflow(w, r)
 		default:
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
 	mux.HandleFunc("/trading-workflows/", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "Go-session-id")
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
-			h4.GetByID(w, r)
+			h4.GetTradingWorkflow(w, r)
 		case http.MethodPut:
-			h4.Update(w, r)
+			h4.UpdateTradingWorkflow(w, r)
+		default:
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	db.AutoMigrate(&models.Order{})
+	db.AutoMigrate(&models.Transaction{})
+	db.AutoMigrate(&models.TradeSummary{})
+
+	h9 := &handlers.OrderHandler{DB: db, Store: store}
+	h10 := &handlers.TransactionHandler{DB: db, Store: store}
+	h11 := &handlers.TradeSummaryHandler{DB: db, Store: store}
+
+	// Order routes
+	mux.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
+		// session, _ := store.Get(r, "Go-session-id")
+		// _, ok := session.Values["user_id"]
+		// if !ok {
+		// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		// 	return
+		// }
+		switch r.Method {
+		case http.MethodGet:
+			h9.GetOrders(w, r)
+		case http.MethodPost:
+			h9.CreateOrder(w, r)
+		default:
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/orders/", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "Go-session-id")
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			h9.GetOrder(w, r)
+		case http.MethodPut:
+			h9.UpdateOrder(w, r)
+		// case http.MethodDelete:
+		//     h9.DeleteOrder(w, r)
+		default:
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Transaction routes
+	mux.HandleFunc("/transactions", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "Go-session-id")
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			h10.GetTransactions(w, r)
+		case http.MethodPost:
+			h10.CreateTransaction(w, r)
+		default:
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/transactions/", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "Go-session-id")
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			h10.GetTransaction(w, r)
+		case http.MethodPut:
+			h10.UpdateTransaction(w, r)
+		// case http.MethodDelete:
+		//     h10.DeleteTransaction(w, r)
+		default:
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// TradeSummary routes
+	mux.HandleFunc("/trade-summaries", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "Go-session-id")
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			h11.GetTradeSummaries(w, r)
+		case http.MethodPost:
+			h11.CreateTradeSummary(w, r)
+		default:
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/trade-summaries/", func(w http.ResponseWriter, r *http.Request) {
+		session, _ := store.Get(r, "Go-session-id")
+		_, ok := session.Values["user_id"]
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			h11.GetTradeSummary(w, r)
+		case http.MethodPut:
+			h11.UpdateTradeSummary(w, r)
+		// case http.MethodDelete:
+		//     h11.DeleteTradeSummary(w, r)
 		default:
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		}
@@ -344,11 +474,11 @@ func main() {
 	})
 
 	handler := cors.New(cors.Options{
-        AllowedOrigins:   []string{"http://localhost:5003"},
-        AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-        AllowedHeaders:   []string{"Content-Type"},
-        AllowCredentials: true,
-    }).Handler(mux)
+		AllowedOrigins:   []string{"http://localhost:5003"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+	}).Handler(mux)
 
 	log.Println("Server started on :8080")
 	log.Fatal(http.ListenAndServe(":8080", handler))
