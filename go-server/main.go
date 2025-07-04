@@ -14,30 +14,30 @@ import (
 	"go-backend/handlers"
 	"go-backend/models"
 	// "os"
-	// "fmt"
-	// "time"
+	"fmt"
+	"time"
 )
 
-// func connectWithRetry(dsn string, maxRetries int, delaySec int) (*gorm.DB, error) {
-// 	var db *gorm.DB
-// 	var err error
+func connectWithRetry(dsn string, maxRetries int, delaySec int) (*gorm.DB, error) {
+	var db *gorm.DB
+	var err error
 
-// 	for i := 1; i <= maxRetries; i++ {
-// 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-// 		if err == nil {
-// 			sqlDB, err := db.DB()
-// 			if err == nil {
-// 				err = sqlDB.Ping()
-// 				if err == nil {
-// 					log.Println("✅ Successfully connected to database.")
-// 					return db, nil
-// 				}
-// 			}
-// 		}
+	for i := 1; i <= maxRetries; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			sqlDB, err := db.DB()
+			if err == nil {
+				err = sqlDB.Ping()
+				if err == nil {
+					log.Println("✅ Successfully connected to database.")
+					return db, nil
+				}
+			}
+		}
 
-// 		log.Printf("Failed to connect to database (attempt %d/%d): %v", i, maxRetries, err)
-// 		time.Sleep(time.Duration(delaySec) * time.Second)
-// 	}
+		log.Printf("Failed to connect to database (attempt %d/%d): %v", i, maxRetries, err)
+		time.Sleep(time.Duration(delaySec) * time.Second)
+	}
 
 // 	return nil, fmt.Errorf("Could not connect to database after %d attempts: %w", maxRetries, err)
 // }

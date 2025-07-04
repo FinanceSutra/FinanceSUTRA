@@ -60,27 +60,6 @@ type DeployedStrategy = {
   broker?: string; // For display purposes
   symbolName?: string; // For display purposes
 };
-// type DeployedStrategy = {
-//   ID: number;
-//   Name: string;
-//   StrategyID: string;
-//   BrokerID: number;
-//   UserID: string;
-//   LotMultiplier: string;
-//   CapitalDeployed: string;
-//   TradingType: string;
-//   Status: string;
-//   currentPnl: number;
-//   percentPnl: number;
-//   DeployedAt: string;
-//   LastUpdated: string;
-//   Metadata: any | null;
-
-
-//   // Optional display-only properties (not from backend)
-//   broker?: string;
-//   symbolName?: string;
-// };
 
 // Sample options for sort and filtering
 const BROKER_OPTIONS = [
