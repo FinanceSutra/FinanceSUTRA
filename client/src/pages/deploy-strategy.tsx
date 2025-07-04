@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   Form,
@@ -135,6 +135,8 @@ export default function DeployStrategyPage() {
         title: "Strategy Deployed",
         description: "Your strategy has been deployed successfully.",
       })
+
+      queryClient.invalidateQueries({ queryKey: ['/api/deployed-strategies'] }); // refresh automatically
       navigate("/deployed-strategies");
     },
     onError: (error) => {

@@ -14,44 +14,44 @@ import (
     "encoding/gob"
     "github.com/google/uuid"
 	// "os"
-	// "fmt"
-	// "time"
+	"fmt"
+	"time"
 )
 
-// func connectWithRetry(dsn string, maxRetries int, delaySec int) (*gorm.DB, error) {
-// 	var db *gorm.DB
-// 	var err error
+func connectWithRetry(dsn string, maxRetries int, delaySec int) (*gorm.DB, error) {
+	var db *gorm.DB
+	var err error
 
-// 	for i := 1; i <= maxRetries; i++ {
-// 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-// 		if err == nil {
-// 			sqlDB, err := db.DB()
-// 			if err == nil {
-// 				err = sqlDB.Ping()
-// 				if err == nil {
-// 					log.Println("✅ Successfully connected to database.")
-// 					return db, nil
-// 				}
-// 			}
-// 		}
+	for i := 1; i <= maxRetries; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			sqlDB, err := db.DB()
+			if err == nil {
+				err = sqlDB.Ping()
+				if err == nil {
+					log.Println("✅ Successfully connected to database.")
+					return db, nil
+				}
+			}
+		}
 
-// 		log.Printf("Failed to connect to database (attempt %d/%d): %v", i, maxRetries, err)
-// 		time.Sleep(time.Duration(delaySec) * time.Second)
-// 	}
+		log.Printf("Failed to connect to database (attempt %d/%d): %v", i, maxRetries, err)
+		time.Sleep(time.Duration(delaySec) * time.Second)
+	}
 
-// 	return nil, fmt.Errorf("Could not connect to database after %d attempts: %w", maxRetries, err)
-// }
+	return nil, fmt.Errorf("Could not connect to database after %d attempts: %w", maxRetries, err)
+}
 
 
 func main() {
-// 	dbHost := os.Getenv("DB_HOST")
-//     dbPort := os.Getenv("DB_PORT")
-//     dbUser := os.Getenv("DB_USER")
-//     dbPassword := os.Getenv("DB_PASSWORD")
-//     dbName := os.Getenv("DB_NAME")
+	// dbHost := os.Getenv("DB_HOST")
+    // dbPort := os.Getenv("DB_PORT")
+    // dbUser := os.Getenv("DB_USER")
+    // dbPassword := os.Getenv("DB_PASSWORD")
+    // dbName := os.Getenv("DB_NAME")
 
-//     dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-//     dbHost, dbPort, dbUser, dbPassword, dbName)
+    // dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+    // dbHost, dbPort, dbUser, dbPassword, dbName)
 
 	gob.Register(uuid.UUID{})
     store := sessions.NewCookieStore([]byte("your-very-secret-key"))
